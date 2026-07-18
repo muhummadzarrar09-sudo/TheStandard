@@ -1,0 +1,1 @@
+export default function EmptyState({eyebrow,title,body}:{eyebrow:string;title:string;body:string}){return <section className="card"><p className="eyebrow">{eyebrow}</p><h3>{title}</h3><p className="muted">{body}</p></section>}

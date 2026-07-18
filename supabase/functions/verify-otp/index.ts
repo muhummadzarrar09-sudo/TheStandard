@@ -1,0 +1,2 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+Deno.serve(async req=>{const {email,token}=await req.json();if(!/^\d{6}$/.test(token))return new Response('Invalid code',{status:400});const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!);const {data,error}=await db.auth.verifyOtp({email:email.trim().toLowerCase(),token,type:'email'});if(error||!data.session)return new Response('Invalid code',{status:401});return Response.json({session:data.session})})

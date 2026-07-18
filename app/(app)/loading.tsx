@@ -1,0 +1,1 @@
+export default function Loading(){return <main className="main"><p className="eyebrow">DISCIPLINE OS</p><h1>Preparing your day…</h1><p className="muted">Loading the standard and checking your local time.</p></main>}

@@ -1,0 +1,1 @@
+export function calculateStreak(days:string[], today:string){const set=new Set(days);let cursor=new Date(today),count=0;while(set.has(cursor.toISOString().slice(0,10))){count++;cursor.setUTCDate(cursor.getUTCDate()-1)}return count}

@@ -1,0 +1,2 @@
+import Link from 'next/link'
+export default function Landing(){return <main className="main"><p className="eyebrow">DISCIPLINE OS · PRIVATE COHORT SYSTEM</p><h1>Structure for people building something real.</h1><p className="muted">A 30-day execution system for disciplined daily work, team accountability, and startup progress.</p><Link className="button" href="/login">Enter the system →</Link></main>}

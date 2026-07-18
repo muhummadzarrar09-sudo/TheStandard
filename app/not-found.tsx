@@ -1,0 +1,1 @@
+import Link from 'next/link';export default function NotFound(){return <main className="main"><p className="eyebrow">404 · NOT ON THE SCHEDULE</p><h1>This page does not exist.</h1><p className="muted">Return to the execution dashboard and take the next commitment.</p><Link className="button" href="/dashboard">Return to Today →</Link></main>}

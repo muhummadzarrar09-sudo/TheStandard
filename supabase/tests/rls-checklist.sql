@@ -1,0 +1,8 @@
+-- Run with two authenticated test users in staging.
+-- 1. User A cannot select User B profiles, checkins, completions, sessions.
+-- 2. User A cannot select or insert messages for Team B.
+-- 3. User A cannot alter user_id, cohort_id, team_id, or author_id in writes.
+-- 4. Non-admin cannot insert reports/community posts/teams.
+-- 5. Leaderboard exposes only safe derived fields.
+-- 6. Revoked device cannot register actions.
+-- 7. Duplicate client_event_id returns one completion, never two.

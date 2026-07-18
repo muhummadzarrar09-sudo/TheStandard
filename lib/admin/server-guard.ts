@@ -1,0 +1,2 @@
+import {createSupabaseServer} from '../supabase/server'
+export async function requireServerAdmin(){const db=await createSupabaseServer();const{data:{user},error}=await db.auth.getUser();if(error||!user)throw new Response('Unauthorized',{status:401});const{data:profile}=await db.from('profiles').select('role').eq('id',user.id).single();if(profile?.role!=='admin')throw new Response('Forbidden',{status:403});return{db,user}}

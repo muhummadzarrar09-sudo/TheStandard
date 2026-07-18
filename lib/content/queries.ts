@@ -1,0 +1,3 @@
+import {createSupabaseServer} from '../supabase/server'
+export async function getPublishedReports(){try{const db=await createSupabaseServer();const{data}=await db.from('reports').select('id,title,interviewee,published_at,summary,version').eq('published',true).order('published_at',{ascending:false});return data||[]}catch{return[]}}
+export async function getCommunityPosts(){try{const db=await createSupabaseServer();const{data}=await db.from('community_posts').select('id,title,body,source_url,published_at,pinned').eq('published',true).order('pinned',{ascending:false}).order('published_at',{ascending:false});return data||[]}catch{return[]}}

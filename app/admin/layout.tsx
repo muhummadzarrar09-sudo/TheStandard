@@ -1,0 +1,2 @@
+import {redirect} from 'next/navigation';import {createSupabaseServer} from '../../lib/supabase/server'
+export default async function AdminLayout({children}:{children:React.ReactNode}){const db=await createSupabaseServer();const {data:{user}}=await db.auth.getUser();if(!user)redirect('/login');const {data:profile}=await db.from('profiles').select('role').eq('id',user.id).single();if(profile?.role!=='admin')redirect('/dashboard');return <>{children}</>}

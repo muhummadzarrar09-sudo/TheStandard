@@ -1,0 +1,1 @@
+'use client';export default function ErrorPage({reset}:{error:Error&{digest?:string};reset:()=>void}){return <main className="main"><p className="eyebrow">TEMPORARY INTERRUPTION</p><h1>The standard is still here.</h1><p className="muted">We could not load this surface. Your saved local state is safe.</p><button className="button" onClick={reset}>Try again →</button></main>}
