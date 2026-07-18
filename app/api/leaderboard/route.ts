@@ -1,13 +1,16 @@
 import { createSupabaseServer } from '../../../lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getActiveUser } from '../../../lib/auth-server'
+import { toResponse, serverError } from '../../../lib/api-errors'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
-  const db = await createSupabaseServer()
-  const { data: { user } } = await db.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(req: NextRequest): Promise<Response> {
+  const { user, error } = await getActiveUser(req)
+  if (error) return toResponse(error)
+  if (!user) return toResponse(serverError())
 
+  const db = await createSupabaseServer()
   const { data: profile } = await db
     .from('profiles')
     .select('cohort_id')
@@ -17,8 +20,8 @@ export async function GET() {
     return NextResponse.json({ members: [], yourRank: null })
   }
 
-  // Tie-breakers: current_streak desc, completion_pct desc, completed_days desc,
-  // joined_at asc. PRD 7.3: "stable join-time tie-breaker."
+  // Tie-breakers: current_streak desc, completion_pct desc,
+  // completed_days desc, joined_at asc. PRD 7.3.
   const { data: rows, error } = await db
     .from('leaderboard_projection')
     .select('user_id, current_streak, completion_pct, completed_days, profiles!inner(display_name)')
@@ -28,7 +31,7 @@ export async function GET() {
     .order('completed_days', { ascending: false })
     .order('joined_at', { ascending: true })
 
-  if (error) return NextResponse.json({ error: 'Leaderboard unavailable' }, { status: 500 })
+  if (error) return toResponse(serverError('Leaderboard unavailable'))
 
   const members = (rows || []).map((r: any, i: number) => ({
     rank: i + 1,

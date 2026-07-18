@@ -1,38 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServer } from '../../../../lib/supabase/server'
+import { getActiveUser } from '../../../../lib/auth-server'
+import { badRequest, forbidden, toResponse, serverError } from '../../../../lib/api-errors'
+import { isUuid } from '../../../../lib/validation/schedule'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(req: NextRequest) {
-  // The previous version only checked that the Authorization header was
-  // present — it never validated the JWT, so a logged-out attacker who
-  // knew the URL got {ok:true}. It also dropped the subscription on the
-  // floor instead of persisting it. Replace with a real server-side flow.
-  const db = await createSupabaseServer()
-  const { data: { user } } = await db.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+const ENDPOINT_MAX = 1024
+const P256DH_MAX = 512
+const AUTH_MAX = 128
+
+export async function POST(req: NextRequest): Promise<Response> {
+  const { user, error } = await getActiveUser(req)
+  if (error) return toResponse(error)
+  if (!user) return toResponse(serverError())
 
   let body: any
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+    return toResponse(badRequest('Invalid JSON body'))
   }
+  if (!body || typeof body !== 'object') return toResponse(badRequest('Invalid body'))
 
   const endpoint = typeof body.endpoint === 'string' ? body.endpoint.trim() : ''
-  const p256dh = body.keys?.p256dh
-  const auth = body.keys?.auth
+  const p256dh = typeof body.keys?.p256dh === 'string' ? body.keys.p256dh : ''
+  const auth = typeof body.keys?.auth === 'string' ? body.keys.auth : ''
   const deviceSessionId = typeof body.deviceSessionId === 'string' ? body.deviceSessionId : null
 
   if (!endpoint || !p256dh || !auth) {
-    return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 })
+    return toResponse(badRequest(
+      'endpoint, keys.p256dh, and keys.auth are all required',
+      { field: 'endpoint' }
+    ))
   }
-  if (endpoint.length > 1024 || p256dh.length > 512 || auth.length > 128) {
-    return NextResponse.json({ error: 'Subscription fields out of range' }, { status: 400 })
+  if (endpoint.length > ENDPOINT_MAX || p256dh.length > P256DH_MAX || auth.length > AUTH_MAX) {
+    return toResponse(badRequest('Subscription fields out of range', { field: 'endpoint' }))
+  }
+  if (!endpoint.startsWith('https://')) {
+    return toResponse(badRequest('endpoint must be an https:// URL', { field: 'endpoint' }))
+  }
+  if (deviceSessionId && !isUuid(deviceSessionId)) {
+    return toResponse(badRequest('deviceSessionId must be a UUID', { field: 'deviceSessionId' }))
   }
 
+  const db = await createSupabaseServer()
   // If a deviceSessionId was passed, verify it belongs to this user and
   // is not revoked. This binds the push subscription to a real device.
   if (deviceSessionId) {
@@ -42,11 +54,11 @@ export async function POST(req: NextRequest) {
       .eq('id', deviceSessionId)
       .maybeSingle()
     if (!session || session.user_id !== user.id || session.revoked_at) {
-      return NextResponse.json({ error: 'Unknown device session' }, { status: 403 })
+      return toResponse(forbidden('Unknown device session'))
     }
   }
 
-  const { error } = await db
+  const { error: uErr } = await db
     .from('push_subscriptions')
     .upsert(
       {
@@ -61,9 +73,6 @@ export async function POST(req: NextRequest) {
       { onConflict: 'endpoint' }
     )
 
-  if (error) {
-    return NextResponse.json({ error: 'Could not save subscription' }, { status: 500 })
-  }
-
+  if (uErr) return toResponse(serverError('Could not save subscription'))
   return NextResponse.json({ ok: true })
 }

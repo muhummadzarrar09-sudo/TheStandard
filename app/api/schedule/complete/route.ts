@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getActiveUser } from '../../../../../lib/auth-server'
-import { STANDARD_SCHEDULE, localDateInTimezone, cutoffForLocalDate } from '../../../../../lib/domain'
-import { validTimezone, validClientEventId } from '../../../../../lib/validation/schedule'
-import { createSupabaseServer } from '../../../../../lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { getActiveUser } from '../../../../lib/auth-server'
+import { STANDARD_SCHEDULE, localDateInTimezone, cutoffForLocalDate } from '../../../../lib/domain'
+import { validTimezone, validClientEventId } from '../../../../lib/validation/schedule'
+import { createSupabaseServer } from '../../../../lib/supabase/server'
+import { badRequest, conflict, toResponse, serverError, type ApiResponse } from '../../../../lib/api-errors'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,40 +22,43 @@ function currentHHMMInZone(date: Date, timezone: string): string {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   const { user, error } = await getActiveUser(req)
-  if (error) return error
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (error) return toResponse(error)
+  if (!user) return toResponse(serverError()) // unreachable
 
-  const body = await req.json().catch(() => null)
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return toResponse(badRequest('Invalid JSON body'))
+  }
   const { blockKey, timezone, clientEventId } = body || {}
-  if (typeof blockKey !== 'string' || typeof timezone !== 'string' || typeof clientEventId !== 'string') {
-    return NextResponse.json({ error: 'Invalid completion payload' }, { status: 400 })
+  if (typeof blockKey !== 'string') {
+    return toResponse(badRequest('blockKey is required', { field: 'blockKey' }))
   }
   if (!validTimezone(timezone)) {
-    return NextResponse.json({ error: 'Invalid timezone' }, { status: 400 })
+    return toResponse(badRequest('Invalid timezone', { field: 'timezone' }))
   }
   if (!validClientEventId(clientEventId)) {
-    return NextResponse.json({ error: 'Invalid client event id' }, { status: 400 })
+    return toResponse(badRequest('Invalid client event id', { field: 'clientEventId' }))
   }
   if (clientEventId.length > 100) {
-    return NextResponse.json({ error: 'clientEventId too long' }, { status: 400 })
+    return toResponse(badRequest('clientEventId too long', { field: 'clientEventId' }))
   }
   const block = STANDARD_SCHEDULE.find(b => b.key === blockKey)
   if (!block) {
-    return NextResponse.json({ error: 'Unknown schedule block' }, { status: 400 })
+    return toResponse(badRequest('Unknown schedule block', { field: 'blockKey' }))
   }
 
   const db = await createSupabaseServer()
   const now = new Date()
   const localDate = localDateInTimezone(now, timezone)
   if (now > cutoffForLocalDate(localDate, timezone)) {
-    return NextResponse.json({ error: 'This schedule day is closed' }, { status: 409 })
+    return toResponse(conflict('This schedule day is closed', { field: 'localDate' }))
   }
 
-  // Access window check: a member whose access has been revoked or hasn't
-  // opened should not be able to write completions. PRD 6.1 "subject to
-  // cohort policy".
+  // Access window check: PRD 6.1 "subject to cohort policy".
   const { data: profile } = await db
     .from('profiles')
     .select('access_start_at, access_end_at')
@@ -62,23 +66,22 @@ export async function POST(req: NextRequest) {
     .single()
   const nowMs = now.getTime()
   if (profile?.access_start_at && nowMs < new Date(profile.access_start_at).getTime()) {
-    return NextResponse.json({ error: 'Access has not opened yet' }, { status: 403 })
+    return toResponse(conflict('Access has not opened yet'))
   }
   if (profile?.access_end_at && nowMs > new Date(profile.access_end_at).getTime()) {
-    return NextResponse.json({ error: 'Access has closed' }, { status: 403 })
+    return toResponse(conflict('Access has closed'))
   }
 
   // Time-of-day check: members cannot pre-mark blocks before the block's
-  // start time. (PRD § 7.1 says blocks have states upcoming/active/
-  // completed/missed; "upcoming" is a distinct state from "active.")
+  // start time. PRD § 7.1 says blocks have states upcoming/active/
+  // completed/missed; "upcoming" is a distinct state from "active."
   if (block.start) {
     const nowHHMM = currentHHMMInZone(now, timezone)
     if (nowHHMM && nowHHMM < block.start) {
-      return NextResponse.json({
-        error: `Block not yet active. It starts at ${block.start} local time.`,
-        block_start: block.start,
-        now_local: nowHHMM
-      }, { status: 409 })
+      return toResponse(conflict(
+        `Block not yet active. It starts at ${block.start} local time.`,
+        { field: 'blockKey', details: { block_start: block.start, now_local: nowHHMM } }
+      ))
     }
   }
 
@@ -98,7 +101,7 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
   if (upsertError) {
-    return NextResponse.json({ error: 'Completion could not be saved' }, { status: 500 })
+    return toResponse(serverError('Completion could not be saved'))
   }
-  return NextResponse.json({ completion: data, localDate })
+  return Response.json({ completion: data, localDate })
 }

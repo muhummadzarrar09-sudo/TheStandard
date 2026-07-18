@@ -122,3 +122,44 @@ Tables in this batch:
 - [x] user_weekly_commitments — split per-command (SELECT/INSERT/UPDATE), DELETE trigger rejects
 - [x] leaderboard_projection — explicit deny triggers on INSERT/UPDATE/DELETE for members; service role bypasses
 - [x] team_progress_logs — added author UPDATE (24h window) and author DELETE; before-update trigger locks immutable columns
+
+---
+
+# Phase 2 Batch 2 — Input validation + error paths
+
+Many API routes accept unbounded strings, don't check UUIDs, surface 500s
+for recoverable client errors, and have ad-hoc error responses. Build a
+shared error helper and apply across the admin and member APIs.
+
+Scope:
+- New lib/api-errors.ts with typed error classes + json helper
+- UUID validation helper
+- Add `requireAuth` wrapper that uses getActiveUser
+- Audit every API route: replace ad-hoc 500s with typed errors
+- Standardize 400/401/403/404/409/500 responses
+- Don't leak Postgres error messages to clients
+
+## Status
+- [x] lib/api-errors.ts — framework-agnostic ApiResponse, badRequest/unauthorized/forbidden/notFound/conflict/serverError, ApiError class, postgrestErrorResponse mapper
+- [x] lib/api-handler.ts — NextResponse-coupled toNextResponse + withErrorHandling wrapper, ZodError support
+- [x] lib/validation/schedule.ts — extended with isUuid, isIsoDate, isHHMM, isBoundedString, isOneOf, trimToRange
+- [x] requireAuth wrapper — auth-server.ts updated to return ApiResponse on error
+- [x] /api/schedule/complete — typed errors, JSON-body parse guard
+- [x] /api/checkins — typed errors, validTimezone, isIsoDate, reflection length check
+- [x] /api/leaderboard — getActiveUser, NextRequest signature fixed
+- [x] /api/milestones — getActiveUser, isUuid, isOneOf for status
+- [x] /api/devices — getActiveUser, isUuid
+- [x] /api/profile — explicit field validation, presets enum check, null displayName support
+- [x] /api/push/subscribe — endpoint https check, key length limits
+- [x] /api/notifications/preferences — boolean + HH:MM validation, both-or-neither check
+- [x] /api/admin/cohorts — withErrorHandling
+- [x] /api/admin/members — withErrorHandling, isUuid for cohortId, displayName bounds
+- [x] /api/admin/enrollment — withErrorHandling, isUuid for cohortId
+- [x] /api/admin/reports — withErrorHandling, length-bounded title/summary/interviewee/body
+- [x] /api/admin/reports-list — withErrorHandling
+- [x] /api/admin/analytics — withErrorHandling
+- [x] /api/admin/export — cohort-scoped CSV, no Postgres error leak
+- [x] /api/health — real health check (Supabase reachability + timing); 503 on failure
+- [x] lib/admin/server-guard.ts — throws ApiResponse, withErrorHandling catches
+- [x] tests/api-errors.test.ts — 7 tests, all pass
+- [x] tests/validation.test.ts — 21 tests, all pass
