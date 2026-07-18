@@ -1,10 +1,11 @@
 import { createSupabaseServer } from '../../../lib/supabase/server'
+import { withRequestIdHeader, withAccessLog } from '../../../lib/api-handler'
 
 export const dynamic = 'force-dynamic'
 
 // Shallow health check: returns 200 with a body describing service state.
 // Used by Vercel + cron monitoring. Does not auth-check.
-export async function GET(): Promise<Response> {
+const handler = withRequestIdHeader(async (): Promise<Response> => {
   const start = Date.now()
   const checks: { name: string; ok: boolean; ms: number; error?: string }[] = []
   let overallOk = true
@@ -35,4 +36,6 @@ export async function GET(): Promise<Response> {
     },
     { status: overallOk ? 200 : 503 }
   )
-}
+})
+
+export const GET = withAccessLog(handler)

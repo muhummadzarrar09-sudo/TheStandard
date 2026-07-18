@@ -163,3 +163,35 @@ Scope:
 - [x] lib/admin/server-guard.ts — throws ApiResponse, withErrorHandling catches
 - [x] tests/api-errors.test.ts — 7 tests, all pass
 - [x] tests/validation.test.ts — 21 tests, all pass
+
+---
+
+# Phase 2 Batch 3 — Observability + security headers
+
+PRD § 10 + the audit call out observability gaps. This batch adds the
+infrastructure: a request_id that flows through API logs, a structured
+log helper, an error-reporting endpoint for client-side failures,
+security headers in next.config.ts, and a small request-error handler
+that captures API failures with their context.
+
+Scope:
+- Add `crypto.randomUUID()`-based request_id on every API request
+- Add `lib/log.ts` with structured `info`, `warn`, `error` helpers
+  that include the request_id when available
+- Add `/api/log` POST endpoint for client-side error reporting
+- Add security headers: X-Frame-Options, X-Content-Type-Options,
+  Referrer-Policy, Permissions-Policy, basic CSP
+- Wire request_id into api-handler's logging path
+
+## Status
+- [x] lib/log.ts — structured JSON logger with redaction; debug/info/warn/error helpers; newRequestId
+- [x] lib/request-context.ts — resolveRequestId validates incoming x-request-id (1..64 alphanumeric), generates one if missing; REQUEST_ID_HEADER constant
+- [x] lib/api-handler.ts — withErrorHandling logs all error paths with request_id, status, and structured fields; new withRequestIdHeader and withAccessLog wrappers
+- [x] /api/log POST — client-side error reporting endpoint, body-capped at 4 KB, field-capped at 500 chars, no auth required (degraded client must always be able to report)
+- [x] next.config.ts headers — CSP (self, Supabase, Vercel), X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy minimal, HSTS max-age=1y
+- [x] middleware.ts — assigns request_id to every response, echoes incoming id if valid
+- [x] /api/health — wrapped in withRequestIdHeader + withAccessLog
+- [x] app/(app)/error.tsx — reports to /api/log with digest, name, message, url, ua
+- [x] app/global-error.tsx — new top-level boundary (replaces the entire tree) with the same reporting
+- [x] ServiceWorkerRegistration — reports registration failure, update availability, and unsupported browsers via /api/log
+- [x] tests/log.test.ts — 10 tests: log emits JSON, redacts sensitive keys, omits undefined ctx, level routing, request_id format, incoming id acceptance/rejection
