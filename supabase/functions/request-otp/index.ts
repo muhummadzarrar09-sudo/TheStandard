@@ -18,11 +18,13 @@
 // expired.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+
 Deno.serve(async req => {
   try {
     const { email } = await req.json()
     const normalized = String(email || '').trim().toLowerCase()
-    if (!/^\S+@\S+\.\S+$/.test(normalized)) {
+    if (!EMAIL_RE.test(normalized)) {
       // Malformed input: still return a generic OK so we don't help an
       // attacker distinguish "bad email format" from "unknown email."
       return json({ ok: true })

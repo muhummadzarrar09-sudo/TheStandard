@@ -1,2 +1,71 @@
-'use client';import{useState}from'react'
-export default function ReportsAdmin(){const[title,setTitle]=useState('');const[published,setPublished]=useState<string[]>([]);return <main className="main"><p className="eyebrow">ADMIN · CONTENT</p><h1>Publish intelligence.</h1><section className="card" style={{marginTop:30}}><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Report title" style={{padding:13,width:'100%',background:'var(--bg)',border:'1px solid var(--line)',color:'var(--text)'}}/><textarea placeholder="Mobile-readable summary" style={{padding:13,width:'100%',height:140,marginTop:10,background:'var(--bg)',border:'1px solid var(--line)',color:'var(--text)'}}/><button className="button" style={{marginTop:12}} onClick={async()=>{if(title){const summary=(document.querySelector('textarea') as HTMLTextAreaElement)?.value||'';const r=await fetch('/api/admin/reports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title,summary})});if(r.ok)setPublished([...published,title]);setTitle('')}}}>Publish report</button></section><section className="card" style={{marginTop:15}}><p className="eyebrow">PUBLISHED THIS SESSION</p>{published.map(x=><p key={x}>{x} <span className="muted">· version 1</span></p>)}</section></main>}
+'use client'
+import { useEffect, useState } from 'react'
+import { ReportForm } from '../../../components/admin/AdminForms'
+
+type Report = { id: string; title: string; published_at: string; version: number }
+
+export default function ReportsAdmin() {
+  const [reports, setReports] = useState<Report[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  async function load() {
+    setLoading(true)
+    try {
+      const r = await fetch('/api/admin/reports-list')
+      const x = await r.json()
+      if (!r.ok) throw new Error(x.error || 'Could not load reports')
+      setReports(x.reports || [])
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load reports')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load() }, [])
+
+  const onPublished = (report: { id: string; title: string }) => {
+    setReports(prev => [{
+      id: report.id,
+      title: report.title,
+      published_at: new Date().toISOString(),
+      version: 1
+    }, ...prev])
+  }
+
+  return (
+    <main className="main">
+      <p className="eyebrow">ADMIN · CONTENT</p>
+      <h1>Publish intelligence.</h1>
+      <section className="card" style={{ marginTop: 30 }}>
+        <ReportForm onPublished={onPublished} />
+      </section>
+      <section className="card" style={{ marginTop: 15 }}>
+        <p className="eyebrow">PUBLISHED</p>
+        {loading ? (
+          <p className="muted">Loading reports…</p>
+        ) : error ? (
+          <p className="muted" style={{ color: '#ff8b82' }}>{error}</p>
+        ) : reports.length === 0 ? (
+          <p className="muted">No reports published yet. Use the form above to publish the first one.</p>
+        ) : (
+          reports.map(r => (
+            <div
+              key={r.id}
+              style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderBottom: '1px solid var(--line)' }}
+            >
+              <div>
+                <b>{r.title}</b>
+                <p className="muted" style={{ margin: '4px 0 0' }}>
+                  Published {new Date(r.published_at).toLocaleString()} · version {r.version}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+    </main>
+  )
+}

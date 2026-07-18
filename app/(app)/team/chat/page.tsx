@@ -29,7 +29,7 @@ export default async function Chat() {
           <div className="brand">DISCIPLINE<small>EXECUTION SYSTEM</small></div>
           <nav>
             <Link href="/dashboard">Today</Link>
-            <Link className="active" href="/team">Team room</Link>
+            <Link href="/team">Team room</Link>
             <Link href="/leaderboard">Leaderboard</Link>
           </nav>
         </aside>
@@ -60,7 +60,8 @@ export default async function Chat() {
         <div className="brand">DISCIPLINE<small>EXECUTION SYSTEM</small></div>
         <nav>
           <Link href="/dashboard">Today</Link>
-          <Link className="active" href="/team">Team room</Link>
+          <Link href="/team">Team room</Link>
+          <Link className="active" href="/team/chat">Chat</Link>
           <Link href="/leaderboard">Leaderboard</Link>
         </nav>
       </aside>
