@@ -53,7 +53,6 @@ export default function Enrollment() {
         kind: 'ok',
         text: isOpen ? 'Enrollment closed. New signups blocked.' : 'Enrollment opened. Eligible emails may request a code.'
       })
-      // Update local state from response
       setCohorts(prev => prev.map(c => c.id === x.cohort.id ? { ...c, status: x.cohort.status } : c))
     } catch {
       setMessage({ kind: 'err', text: 'Network error.' })
@@ -63,38 +62,46 @@ export default function Enrollment() {
   }
 
   return (
-    <main className="main">
+    <>
       <p className="eyebrow">ADMIN · ENROLLMENT</p>
       <h1>Control the window.</h1>
 
-      <section className="card" style={{ marginTop: 30 }}>
-        <p className="eyebrow">COHORT</p>
+      <section className="card" style={{ marginTop: 30 }} aria-labelledby="cohort-picker">
+        <p className="eyebrow" id="cohort-picker">COHORT</p>
         {loading ? (
-          <p className="muted">Loading cohorts…</p>
+          <p className="muted" role="status">Loading cohorts…</p>
         ) : cohorts.length === 0 ? (
           <p className="muted">No cohorts yet. Create one in Supabase to get started.</p>
         ) : (
-          <select
-            value={selectedId}
-            onChange={e => setSelectedId(e.target.value)}
-            style={{
-              padding: 12,
-              background: 'var(--bg)',
-              border: '1px solid var(--line)',
-              color: 'var(--text)',
-              minWidth: 280
-            }}
-          >
-            {cohorts.map(c => (
-              <option key={c.id} value={c.id}>{c.name} ({c.status})</option>
-            ))}
-          </select>
+          <label style={{ display: 'block' }}>
+            <span className="visually-hidden" style={{ position: 'absolute', left: -9999 }}>Select cohort</span>
+            <select
+              value={selectedId}
+              onChange={e => setSelectedId(e.target.value)}
+              style={{
+                padding: 12,
+                background: 'var(--bg)',
+                border: '1px solid var(--line)',
+                color: 'var(--text)',
+                minWidth: 280
+              }}
+            >
+              {cohorts.map(c => (
+                <option key={c.id} value={c.id}>{c.name} ({c.status})</option>
+              ))}
+            </select>
+          </label>
         )}
       </section>
 
       {selected && (
-        <section className="card" style={{ marginTop: 15 }}>
-          <p className="eyebrow">OTP REGISTRATION</p>
+        <section
+          className="card"
+          style={{ marginTop: 15 }}
+          aria-labelledby="otp-status"
+          aria-live="polite"
+        >
+          <p className="eyebrow" id="otp-status">OTP REGISTRATION</p>
           <h2 style={{ color: isOpen ? 'var(--accent)' : 'var(--muted)' }}>
             {isOpen ? 'OPEN' : 'CLOSED'}
           </h2>
@@ -112,12 +119,16 @@ export default function Enrollment() {
             {busy ? 'Updating…' : isOpen ? 'Close enrollment' : 'Open enrollment'}
           </button>
           {message && (
-            <p className="muted" style={{ marginTop: 12, color: message.kind === 'err' ? '#ff8b82' : 'var(--accent)' }}>
+            <p
+              role="status"
+              className="muted"
+              style={{ marginTop: 12, color: message.kind === 'err' ? '#ff8b82' : 'var(--accent)' }}
+            >
               {message.text}
             </p>
           )}
         </section>
       )}
-    </main>
+    </>
   )
 }

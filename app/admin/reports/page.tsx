@@ -36,36 +36,47 @@ export default function ReportsAdmin() {
   }
 
   return (
-    <main className="main">
+    <>
       <p className="eyebrow">ADMIN · CONTENT</p>
       <h1>Publish intelligence.</h1>
-      <section className="card" style={{ marginTop: 30 }}>
+      <section
+        className="card"
+        style={{ marginTop: 30 }}
+        aria-labelledby="report-form"
+      >
+        <h2 id="report-form" style={{ position: 'absolute', left: -9999 }}>Publish a new report</h2>
         <ReportForm onPublished={onPublished} />
       </section>
-      <section className="card" style={{ marginTop: 15 }}>
-        <p className="eyebrow">PUBLISHED</p>
+      <section
+        className="card"
+        style={{ marginTop: 15 }}
+        aria-labelledby="published-list"
+      >
+        <p className="eyebrow" id="published-list">PUBLISHED</p>
         {loading ? (
-          <p className="muted">Loading reports…</p>
+          <p className="muted" role="status">Loading reports…</p>
         ) : error ? (
-          <p className="muted" style={{ color: '#ff8b82' }}>{error}</p>
+          <p className="muted" role="alert" style={{ color: '#ff8b82' }}>{error}</p>
         ) : reports.length === 0 ? (
           <p className="muted">No reports published yet. Use the form above to publish the first one.</p>
         ) : (
-          reports.map(r => (
-            <div
-              key={r.id}
-              style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderBottom: '1px solid var(--line)' }}
-            >
-              <div>
-                <b>{r.title}</b>
-                <p className="muted" style={{ margin: '4px 0 0' }}>
-                  Published {new Date(r.published_at).toLocaleString()} · version {r.version}
-                </p>
-              </div>
-            </div>
-          ))
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {reports.map(r => (
+              <li
+                key={r.id}
+                style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderBottom: '1px solid var(--line)' }}
+              >
+                <div>
+                  <b>{r.title}</b>
+                  <p className="muted" style={{ margin: '4px 0 0' }}>
+                    Published {new Date(r.published_at).toLocaleString()} · version {r.version}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
-    </main>
+    </>
   )
 }

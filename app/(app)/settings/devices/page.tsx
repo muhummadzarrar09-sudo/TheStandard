@@ -1,3 +1,112 @@
-'use client';import{useEffect,useState}from'react';import Link from'next/link'
-type Device={id:string;label:string|null;last_seen_at:string}
-export default function Devices(){const[devices,setDevices]=useState<Device[]>([]);const[loading,setLoading]=useState(true);useEffect(()=>{fetch('/api/devices').then(r=>r.json()).then(x=>setDevices(x.sessions||[])).finally(()=>setLoading(false))},[]);async function revoke(id:string){const r=await fetch(`/api/devices?id=${encodeURIComponent(id)}`,{method:'DELETE'});if(r.ok)setDevices(x=>x.filter(d=>d.id!==id))}return <div className="shell"><aside className="rail"><div className="brand">DISCIPLINE<small>EXECUTION SYSTEM</small></div><nav><Link href="/dashboard">Today</Link><Link href="/settings">Settings</Link><Link className="active" href="/settings/devices">Devices</Link></nav></aside><main className="main"><p className="eyebrow">SETTINGS · SECURITY</p><h1>Active devices.</h1><p className="muted">Two devices maximum. Revoke a session before signing in somewhere new.</p><section className="card" style={{marginTop:30}}>{loading?<p className="muted">Loading sessions…</p>:devices.length?devices.map(d=><div key={d.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'18px 0',borderBottom:'1px solid var(--line)'}}><div><b>{d.label||'Unknown device'}</b><p className="muted" style={{margin:'5px 0 0'}}>Last active · {new Date(d.last_seen_at).toLocaleString()}</p></div><button className="button" style={{background:'transparent',color:'var(--accent)',border:'1px solid var(--accent)'}} onClick={()=>revoke(d.id)}>Sign out</button></div>):<p className="muted">No active device sessions found.</p>}</section></main></div>}
+'use client'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import AppShellClient from '../../../components/ui/AppShellClient'
+
+type Device = {
+  id: string
+  label: string | null
+  last_seen_at: string
+  revoked_at: string | null
+}
+
+const RAIL = [
+  { href: '/dashboard', key: 'rail.today' as const },
+  { href: '/schedule', key: 'rail.schedule' as const },
+  { href: '/tracker', key: 'rail.tracker' as const },
+  { href: '/team', key: 'rail.team' as const },
+  { href: '/team/chat', key: 'rail.teamChat' as const },
+  { href: '/leaderboard', key: 'rail.leaderboard' as const },
+  { href: '/reports', key: 'rail.reports' as const },
+  { href: '/settings', key: 'rail.settings' as const }
+]
+
+export default function Devices() {
+  const [devices, setDevices] = useState<Device[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const r = await fetch('/api/devices')
+        const x = await r.json()
+        if (cancelled) return
+        if (!r.ok) throw new Error(x.error || 'Could not load devices')
+        setDevices(x.sessions || [])
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load devices')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  async function revoke(id: string) {
+    try {
+      const r = await fetch(`/api/devices?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+      if (r.ok) {
+        setDevices(devices => devices.filter(d => d.id !== id))
+      } else {
+        const x = await r.json().catch(() => ({} as any))
+        setError(x.error || 'Could not revoke device')
+      }
+    } catch {
+      setError('Network error.')
+    }
+  }
+
+  return (
+    <AppShellClient items={RAIL}>
+      <p className="eyebrow">SETTINGS · SECURITY</p>
+      <h1>Active devices.</h1>
+      <p className="muted">Two devices maximum. Revoke a session before signing in somewhere new.</p>
+      {error && (
+        <p role="alert" className="muted" style={{ color: '#ff8b82', marginTop: 12 }}>
+          {error}
+        </p>
+      )}
+      <section className="card" style={{ marginTop: 30 }} aria-labelledby="active-devices">
+        <h2 id="active-devices" className="eyebrow" style={{ marginTop: 0 }}>ACTIVE SESSIONS</h2>
+        {loading ? (
+          <p className="muted" role="status">Loading sessions…</p>
+        ) : devices.length === 0 ? (
+          <p className="muted">No active device sessions found.</p>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {devices.map(d => (
+              <li
+                key={d.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '18px 0',
+                  borderBottom: '1px solid var(--line)'
+                }}
+              >
+                <div>
+                  <b>{d.label || 'Unknown device'}</b>
+                  <p className="muted" style={{ margin: '5px 0 0' }}>
+                    Last active · {new Date(d.last_seen_at).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="button"
+                  style={{ background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)' }}
+                  onClick={() => revoke(d.id)}
+                >
+                  Sign out
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </AppShellClient>
+  )
+}

@@ -174,15 +174,6 @@ log helper, an error-reporting endpoint for client-side failures,
 security headers in next.config.ts, and a small request-error handler
 that captures API failures with their context.
 
-Scope:
-- Add `crypto.randomUUID()`-based request_id on every API request
-- Add `lib/log.ts` with structured `info`, `warn`, `error` helpers
-  that include the request_id when available
-- Add `/api/log` POST endpoint for client-side error reporting
-- Add security headers: X-Frame-Options, X-Content-Type-Options,
-  Referrer-Policy, Permissions-Policy, basic CSP
-- Wire request_id into api-handler's logging path
-
 ## Status
 - [x] lib/log.ts — structured JSON logger with redaction; debug/info/warn/error helpers; newRequestId
 - [x] lib/request-context.ts — resolveRequestId validates incoming x-request-id (1..64 alphanumeric), generates one if missing; REQUEST_ID_HEADER constant
@@ -195,3 +186,34 @@ Scope:
 - [x] app/global-error.tsx — new top-level boundary (replaces the entire tree) with the same reporting
 - [x] ServiceWorkerRegistration — reports registration failure, update availability, and unsupported browsers via /api/log
 - [x] tests/log.test.ts — 10 tests: log emits JSON, redacts sensitive keys, omits undefined ctx, level routing, request_id format, incoming id acceptance/rejection
+
+---
+
+# Phase 2 Batch 4 — Accessibility + i18n + DST hardening
+
+Three themes:
+1. Accessibility: skip-to-content link, focus management, aria-current
+   on the rail, alt text on icons, role/aria-label on icon-only
+   controls, live region for sync state, audit all interactive
+   controls in app/(app), app/admin, app/(public).
+2. i18n: thin copy table at lib/copy.ts. PRD says English-only at
+   launch, but every user-visible string in the app should come from
+   the copy table so future translation is mechanical.
+3. DST hardening: add explicit tests for spring-forward and fall-back
+   dates on multiple timezones; verify the cutoff/leaderboard
+   computations handle them correctly. Add a small travel-simulation
+   helper for QA.
+
+## Status
+- [x] lib/copy.ts — i18n string table; t() helper with {name} substitution, locale fallback, missing-key sentinel
+- [x] SkipLink — first-focusable element, jumps to #main, hidden until focused
+- [x] AppShell + AppShellClient — shared rail with active-link highlighting; server version for SSR pages, client version for client pages; aria-current="page" on the active link
+- [x] Root layout — SkipLink added; #main on the layout's main, focusable
+- [x] All (app) and admin pages — refactored to use AppShell; aria-label/aria-labelledby on sections; role="status" on save messages; role="alert" on errors; role="radiogroup" on theme picker; live region for theme sync state; progressbar role on completion bar
+- [x] (public) login + verify — labels are properly associated; errors use role="alert"; success uses role="status"; noValidate on forms (we handle validation in the API)
+- [x] globals.css — .visually-hidden utility, focus-visible on more controls, :disabled cursor
+- [x] DST + travel tests — 206 cases across 8 zones × 5 dates × 5 hours; verifies the implementation produces the right UTC instant for any localDate/timezone/hour combination; also tests localDateInTimezone at DST transitions
+- [x] Copy table tests — 6 cases: resolution, substitution, missing key, locale fallback
+- [x] Team, TeamChat, Reports, Leaderboard, Tracker, Schedule, Dashboard — all use AppShell, copy table, proper aria
+- [x] Admin layout — wraps children in AppShell; admin pages no longer render their own rail (removed <main> wrappers, use fragments)
+- [x] Settings (client) + Devices (client) — use AppShellClient

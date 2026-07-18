@@ -1,11 +1,23 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '../../../lib/supabase/server'
 import { localDateInTimezone } from '../../../lib/domain'
 import { consecutiveDays, bestStreak } from '../../../lib/domain/streaks'
 import ProgressHistory from '../../../components/tracker/ProgressHistory'
+import AppShell from '../../../components/ui/AppShell'
+import { t } from '../../../lib/copy'
 
 export const dynamic = 'force-dynamic'
+
+const RAIL = [
+  { href: '/dashboard', key: 'rail.today' as const },
+  { href: '/schedule', key: 'rail.schedule' as const },
+  { href: '/tracker', key: 'rail.tracker' as const },
+  { href: '/team', key: 'rail.team' as const },
+  { href: '/team/chat', key: 'rail.teamChat' as const },
+  { href: '/leaderboard', key: 'rail.leaderboard' as const },
+  { href: '/reports', key: 'rail.reports' as const },
+  { href: '/settings', key: 'rail.settings' as const }
+]
 
 export default async function Tracker() {
   const db = await createSupabaseServer()
@@ -23,7 +35,6 @@ export default async function Tracker() {
   const cohortStart = cohort?.start_at ? new Date(cohort.start_at) : null
 
   // Build the 30-day window from the cohort's start_at (or today if no cohort).
-  // Earlier: this used Date.now() which drifted from the cohort boundary.
   const windowStart = cohortStart
     ? new Date(Math.max(cohortStart.getTime(), Date.parse(today + 'T00:00:00Z') - 29 * 86400000))
     : new Date(Date.parse(today + 'T00:00:00Z') - 29 * 86400000)
@@ -41,46 +52,31 @@ export default async function Tracker() {
   const totalCompleted = completedDates.length
 
   return (
-    <div className="shell">
-      <aside className="rail">
-        <div className="brand">DISCIPLINE<small>EXECUTION SYSTEM</small></div>
-        <nav>
-          <Link href="/dashboard">Today</Link>
-          <Link className="active" href="/tracker">Tracker</Link>
-          <Link href="/leaderboard">Leaderboard</Link>
-          <Link href="/team">Team room</Link>
-        </nav>
-      </aside>
-      <main className="main">
-        <p className="eyebrow">PERSONAL RECORD · 30 DAYS</p>
-        <h1>See the pattern.</h1>
-        <div className="grid" style={{ marginTop: 30 }}>
-          <section className="card">
-            <p className="eyebrow">CURRENT STREAK</p>
-            <h2>
-              {current} day{current === 1 ? '' : 's'}
-            </h2>
-            <p className="muted">Consecutive fully completed days ending today or yesterday.</p>
-          </section>
-          <section className="card">
-            <p className="eyebrow">BEST STREAK</p>
-            <h2>
-              {best} day{best === 1 ? '' : 's'}
-            </h2>
-            <p className="muted">Your best run in this cohort window.</p>
-          </section>
-        </div>
-        <ProgressHistory
-          windowStart={windowStartStr}
-          checkins={rows}
-        />
-        <section className="card" style={{ marginTop: 15 }}>
-          <p className="eyebrow">WEEKLY REVIEW</p>
-          <p className="muted">
-            {totalCompleted} of 30 days complete. Review the pattern, then choose the next standard.
-          </p>
+    <AppShell items={RAIL}>
+      <p className="eyebrow">PERSONAL RECORD · 30 DAYS</p>
+      <h1>{t('tracker.heading')}</h1>
+      <div className="grid" style={{ marginTop: 30 }}>
+        <section className="card" aria-label={t('tracker.currentStreak')}>
+          <p className="eyebrow">{t('tracker.currentStreak')}</p>
+          <h2>{current} day{current === 1 ? '' : 's'}</h2>
+          <p className="muted">Consecutive fully completed days ending today or yesterday.</p>
         </section>
-      </main>
-    </div>
+        <section className="card" aria-label={t('tracker.bestStreak')}>
+          <p className="eyebrow">{t('tracker.bestStreak')}</p>
+          <h2>{best} day{best === 1 ? '' : 's'}</h2>
+          <p className="muted">Your best run in this cohort window.</p>
+        </section>
+      </div>
+      <ProgressHistory
+        windowStart={windowStartStr}
+        checkins={rows}
+      />
+      <section className="card" style={{ marginTop: 15 }}>
+        <p className="eyebrow">{t('tracker.weeklyReview')}</p>
+        <p className="muted">
+          {t('tracker.daysOf', 'en', { done: totalCompleted })}
+        </p>
+      </section>
+    </AppShell>
   )
 }

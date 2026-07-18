@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { createSupabaseServer } from '../../../lib/supabase/server'
 import { redirect } from 'next/navigation'
 import {
@@ -7,11 +6,24 @@ import {
   completionPercent
 } from '../../../lib/domain'
 import { consecutiveDays } from '../../../lib/domain/streaks'
+import AppShell from '../../../components/ui/AppShell'
 import TodayBlocks from '../../../components/schedule/TodayBlocks'
 import DailyCheckin from '../../../components/tracker/DailyCheckin'
 import WeeklyCommitment from '../../../components/tracker/WeeklyCommitment'
+import { t } from '../../../lib/copy'
 
 export const dynamic = 'force-dynamic'
+
+const RAIL = [
+  { href: '/dashboard', key: 'rail.today' as const },
+  { href: '/schedule', key: 'rail.schedule' as const },
+  { href: '/tracker', key: 'rail.tracker' as const },
+  { href: '/team', key: 'rail.team' as const },
+  { href: '/team/chat', key: 'rail.teamChat' as const },
+  { href: '/leaderboard', key: 'rail.leaderboard' as const },
+  { href: '/reports', key: 'rail.reports' as const },
+  { href: '/settings', key: 'rail.settings' as const }
+]
 
 export default async function Dashboard() {
   const db = await createSupabaseServer()
@@ -57,8 +69,7 @@ export default async function Dashboard() {
 
   // Streak: pull from the same signal the leaderboard uses
   // (daily_checkins.completed = true) so the dashboard and leaderboard never
-  // disagree. The PRD 7.2 "current_streak" is the same number on both
-  // surfaces.
+  // disagree.
   const { data: checkins } = await db
     .from('daily_checkins')
     .select('local_date')
@@ -92,71 +103,64 @@ export default async function Dashboard() {
     STANDARD_SCHEDULE.filter(b => b.required).find(b => !doneKeys.has(b.key))
 
   return (
-    <div className="shell">
-      <aside className="rail">
-        <div className="brand">DISCIPLINE<small>EXECUTION SYSTEM</small></div>
-        <nav>
-          <Link className="active" href="/dashboard">Today</Link>
-          <Link href="/schedule">Schedule</Link>
-          <Link href="/tracker">Tracker</Link>
-          <Link href="/team">Team room</Link>
-          <Link href="/leaderboard">Leaderboard</Link>
-          <Link href="/reports">Reports</Link>
-          <Link href="/settings">Settings</Link>
-        </nav>
-      </aside>
-      <main className="main">
-        <p className="eyebrow">
-          {cohortName.toUpperCase()} · DAY {String(cohortDay).padStart(2, '0')}
-        </p>
-        <h1>Your standard for today.</h1>
-        <p className="muted">Timezone: {timezone}</p>
-        <div className="grid">
-          <section className="card">
-            <p className="eyebrow">TODAY'S COMPLETION</p>
-            <h2>
-              {requiredDone}
-              <span className="muted"> / {requiredTotal}</span>
-            </h2>
-            <div style={{ height: 4, background: '#29302f' }}>
-              <i
-                style={{
-                  display: 'block',
-                  width: pct + '%',
-                  height: '100%',
-                  background: 'var(--accent)'
-                }}
-              />
-            </div>
-            <p className="muted">
-              {currentStreak} day streak
-              {criticalTotal > 0 ? ` · ${criticalDone} / ${criticalTotal} critical` : ''}
-            </p>
-          </section>
-          <section className="card">
-            <p className="eyebrow">UP NEXT</p>
-            {next ? (
-              <>
-                <h2>{next.label}</h2>
-                <p className="muted">
-                  {next.start}
-                  {next.end ? `–${next.end}` : ''} · Required block
-                </p>
-              </>
-            ) : (
-              <>
-                <h2>All required blocks complete</h2>
-                <p className="muted">
-                  Day {cohortDay} locked in. Streak extends tomorrow.
-                </p>
-              </>
-            )}
-          </section>
-        </div>
-        <TodayBlocks initialDone={Array.from(doneKeys)} />
-        <WeeklyCommitment />
-        <DailyCheckin />
-      </main>
-    </div>
+    <AppShell items={RAIL}>
+      <p className="eyebrow">
+        {cohortName.toUpperCase()} · {t('today.dayLabel', 'en', { day: String(cohortDay).padStart(2, '0') })}
+      </p>
+      <h1>{t('today.heading')}</h1>
+      <p className="muted">Timezone: {timezone}</p>
+      <div className="grid">
+        <section className="card" aria-label={t('today.completionEyebrow')}>
+          <p className="eyebrow">{t('today.completionEyebrow')}</p>
+          <h2>
+            {requiredDone}
+            <span className="muted"> / {requiredTotal}</span>
+          </h2>
+          <div
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${pct}% complete`}
+            style={{ height: 4, background: '#29302f' }}
+          >
+            <i
+              style={{
+                display: 'block',
+                width: pct + '%',
+                height: '100%',
+                background: 'var(--accent)'
+              }}
+            />
+          </div>
+          <p className="muted">
+            {currentStreak} day streak
+            {criticalTotal > 0 ? ` · ${criticalDone} / ${criticalTotal} critical` : ''}
+          </p>
+        </section>
+        <section className="card" aria-label={t('today.upNextEyebrow')}>
+          <p className="eyebrow">{t('today.upNextEyebrow')}</p>
+          {next ? (
+            <>
+              <h2>{next.label}</h2>
+              <p className="muted">
+                {next.start}
+                {next.end ? `–${next.end}` : ''} · Required block
+              </p>
+            </>
+          ) : (
+            <>
+              <h2>{t('today.allCompleteTitle')}</h2>
+              <p className="muted">
+                {t('today.allCompleteDetail', 'en', { day: cohortDay })}
+              </p>
+            </>
+          )}
+        </section>
+      </div>
+      <TodayBlocks initialDone={Array.from(doneKeys)} />
+      <WeeklyCommitment />
+      <DailyCheckin />
+    </AppShell>
   )
 }

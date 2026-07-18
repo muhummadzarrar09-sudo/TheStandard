@@ -1,6 +1,7 @@
 import './globals.css'
 import { ThemeProvider } from '../themes/theme-provider'
 import ServiceWorkerRegistration from '../components/pwa/ServiceWorkerRegistration'
+import SkipLink from '../components/ui/SkipLink'
 
 // Inline script that runs before React hydration and sets the data-theme
 // attribute on <html> from localStorage. Prevents the flash of default
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
       </head>
       <body>
+        <SkipLink />
         <ThemeProvider>
           <ServiceWorkerRegistration />
           {children}
