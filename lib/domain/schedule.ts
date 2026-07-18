@@ -21,4 +21,34 @@ export function completionPercent(blocks:ScheduleBlock[],completed:Set<string>){
 export function isDayComplete(blocks:ScheduleBlock[],completed:Set<string>){return blocks.filter(b=>b.required).every(b=>completed.has(b.key))}
 export function criticalComplete(blocks:ScheduleBlock[],completed:Set<string>){return blocks.filter(b=>b.critical).every(b=>completed.has(b.key))}
 export function localDateInTimezone(date:Date,timezone:string){return new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(date)}
-export function cutoffForLocalDate(localDate:string,timezone:string,cutoffHour=3){const [y,m,d]=localDate.split('-').map(Number);const utcGuess=new Date(Date.UTC(y,m-1,d+1,cutoffHour));const parts=new Intl.DateTimeFormat('en-US',{timeZone:timezone,timeZoneName:'longOffset'}).formatToParts(utcGuess);const offset=parts.find(p=>p.type==='timeZoneName')?.value?.replace('GMT','')||'+00:00';const sign=offset.startsWith('-')?-1:1;const [oh,om]=offset.replace('+','').replace('-','').split(':').map(Number);return new Date(utcGuess.getTime()-sign*(oh*60+om)*60000)}
+
+function partsInZone(date:Date,timezone:string){
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:timezone,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(date);
+  const get=(t:string)=>Number(parts.find(p=>p.type===t)!.value);
+  return{y:get('year'),mo:get('month'),d:get('day'),h:get('hour')===24?0:get('hour'),mi:get('minute'),s:get('second')}
+}
+
+// Returns the UTC instant whose wall-clock in `timezone` is `localDate` at `cutoffHour:00:00`.
+// Robust across DST transitions, half-hour offsets, and the International Date Line.
+export function cutoffForLocalDate(localDate:string,timezone:string,cutoffHour=3){
+  const[y,mo,d]=localDate.split('-').map(Number);
+  if(!Number.isFinite(y)||!Number.isFinite(mo)||!Number.isFinite(d))return new Date(NaN);
+  // Closed-form first: it works on the common case (no DST transition between
+  // localDate 00:00 and cutoffHour:00 in the target zone).
+  const T0=Date.UTC(y,mo-1,d,cutoffHour,0,0);
+  const w0=partsInZone(new Date(T0),timezone);
+  const W=Date.UTC(w0.y,w0.mo-1,w0.d,w0.h,w0.mi,w0.s);
+  const closedForm=new Date(2*T0-W);
+  // Verify the closed form actually lands on localDate at cutoffHour:00:00.
+  const w=partsInZone(closedForm,timezone);
+  if(w.y===y&&w.mo===mo&&w.d===d&&w.h===cutoffHour&&w.mi===0&&w.s===0)return closedForm;
+  // DST fallback: scan forward in 1-hour steps from (localDate, cutoffHour-12, 0) UTC
+  // for up to 24 hours. The first instant whose wall-clock matches is the answer.
+  const Tstart=Date.UTC(y,mo-1,d,cutoffHour-12,0,0);
+  for(let h=0;h<=24;h++){
+    const T=Tstart+h*3600000;
+    const w2=partsInZone(new Date(T),timezone);
+    if(w2.y===y&&w2.mo===mo&&w2.d===d&&w2.h===cutoffHour&&w2.mi===0&&w2.s===0)return new Date(T)
+  }
+  return closedForm
+}
