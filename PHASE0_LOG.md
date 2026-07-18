@@ -94,3 +94,31 @@ Three things that make the repo feel finished without adding more product code:
 - [x] 1 deleted dead files: docs/api-route-notes.ts, .config/nextjs-nodejs/, expanded .gitignore, updated progress-log.md to reflect actual state
 - [x] 2 added real root README with quick start, layout, scripts, security model, deployment
 - [x] 3 CI: lint + typecheck + test + build steps in .github/workflows/ci.yml; flat eslint.config.mjs; vitest.config.ts to lock include path; pinned version ranges in package.json (no more "latest")
+
+---
+
+# Phase 2 Batch 1 — RLS hardening pass
+
+Per-table policy split for member-facing tables whose RLS uses `for all`
+or otherwise conflates SELECT/INSERT/UPDATE/DELETE. Plus defense-in-depth
+triggers where useful.
+
+Tables in this batch:
+- block_completions (split per-command, deny DELETE, restrict UPDATEs)
+- device_sessions (split per-command, deny DELETE, allow only label +
+  last_seen_at updates)
+- push_subscriptions (split per-command, deny DELETE, allow only enabled
+  flag update)
+- notification_preferences (split per-command, deny DELETE)
+- user_weekly_commitments (split per-command, deny DELETE)
+- leaderboard_projection (explicit deny INSERT/UPDATE/DELETE)
+- team_progress_logs (add author UPDATE/DELETE for self-correction)
+
+## Status
+- [x] block_completions — split per-command, deny DELETE, before-update trigger locks immutable columns, before-insert trigger enforces user_id + status='completed'
+- [x] device_sessions — split per-command (SELECT only for members), triggers reject UPDATE/DELETE for non-service callers
+- [x] push_subscriptions — split per-command (SELECT/INSERT/UPDATE), members can only change `enabled`, triggers reject server-managed field changes and DELETE
+- [x] notification_preferences — split per-command (SELECT/INSERT/UPDATE), DELETE trigger rejects
+- [x] user_weekly_commitments — split per-command (SELECT/INSERT/UPDATE), DELETE trigger rejects
+- [x] leaderboard_projection — explicit deny triggers on INSERT/UPDATE/DELETE for members; service role bypasses
+- [x] team_progress_logs — added author UPDATE (24h window) and author DELETE; before-update trigger locks immutable columns
