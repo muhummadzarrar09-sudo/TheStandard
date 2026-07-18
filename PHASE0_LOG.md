@@ -79,3 +79,18 @@ Severity 2 items, in order from the audit's table:
 - [x] 2.24 report offline save button wired — SaveOfflineButton client component reads + writes discipline-reports-v2
 - [x] 2.25 theme single source of truth — JS theme is now the source (CSS rules in globals.css kept for non-JS fallback); settings page renders all six presets with active state; SWR avoids FOUC via inline script
 - [x] 2.26 settings page consumes theme from provider — also adds notification preferences UI (daily_reminder, critical_block_reminder, report_alerts, team_messages, quiet hours)
+
+---
+
+# Phase 1.5 — Finishing touches (3 items)
+
+Three things that make the repo feel finished without adding more product code:
+
+1. Delete dead doc/asset files
+2. Add a real root README
+3. Add a test script + lint script + CI step
+
+## Status
+- [x] 1 deleted dead files: docs/api-route-notes.ts, .config/nextjs-nodejs/, expanded .gitignore, updated progress-log.md to reflect actual state
+- [x] 2 added real root README with quick start, layout, scripts, security model, deployment
+- [x] 3 CI: lint + typecheck + test + build steps in .github/workflows/ci.yml; flat eslint.config.mjs; vitest.config.ts to lock include path; pinned version ranges in package.json (no more "latest")
