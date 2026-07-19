@@ -43,7 +43,7 @@ describe('copy table', () => {
       'rail.today', 'rail.schedule', 'rail.tracker', 'rail.team', 'rail.teamChat',
       'rail.leaderboard', 'rail.reports', 'rail.community', 'rail.settings', 'rail.profile',
       'rail.admin.members', 'rail.admin.enrollment', 'rail.admin.teams',
-      'rail.admin.analytics', 'rail.admin.reports',
+      'rail.admin.schedule', 'rail.admin.analytics', 'rail.admin.reports',
       'skipToContent',
       'notFound.eyebrow', 'notFound.title', 'notFound.body', 'notFound.cta', 'notFound.signin',
       'loading.eyebrow', 'loading.title', 'loading.body',

@@ -32,6 +32,7 @@ export type CopyKey =
   | 'rail.admin.members'
   | 'rail.admin.enrollment'
   | 'rail.admin.teams'
+  | 'rail.admin.schedule'
   | 'rail.admin.analytics'
   | 'rail.admin.reports'
   | 'skipToContent'
@@ -156,6 +157,7 @@ const en: Record<CopyKey, string> = {
   'rail.admin.members': 'Members',
   'rail.admin.enrollment': 'Enrollment',
   'rail.admin.teams': 'Teams',
+  'rail.admin.schedule': 'Schedule',
   'rail.admin.analytics': 'Analytics',
   'rail.admin.reports': 'Reports',
   'skipToContent': 'Skip to content',
