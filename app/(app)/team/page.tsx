@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '../../../lib/supabase/server'
 import MetricCard from '../../../components/ui/MetricCard'
 import MilestoneList from '../../../components/team/MilestoneList'
+import TeamProgressLog from '../../../components/team/TeamProgressLog'
 import EmptyState from '../../../components/ui/EmptyState'
 import AppShell from '../../../components/ui/AppShell'
 import { t } from '../../../lib/copy'
@@ -83,6 +84,7 @@ export default async function Team() {
         />
       </div>
       <MilestoneList teamId={team.id} />
+      <TeamProgressLog teamId={team.id} />
       <Link
         className="button"
         style={{ display: 'inline-block', marginTop: 20 }}

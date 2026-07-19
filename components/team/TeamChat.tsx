@@ -17,6 +17,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [sendBusy, setSendBusy] = useState(false)
+  const [unread, setUnread] = useState(0)
   const scrollerRef = useRef<HTMLDivElement>(null)
   const userIdRef = useRef<string | null>(null)
   // Track whether the user is "at the bottom" of the chat. If they
@@ -95,11 +96,14 @@ export default function TeamChat({ teamId }: { teamId: string }) {
 
   // Auto-scroll to bottom when new messages arrive *and* the user is
   // already at the bottom. If they scrolled up to read history, we
-  // don't yank them back down.
+  // don't yank them back down. Also auto-mark-read when at the
+  // bottom; this resets the unread badge.
   useEffect(() => {
     if (!scrollerRef.current) return
     if (!stickToBottomRef.current) return
     scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight
+    // The new message is now on screen; mark it read.
+    markRead()
   }, [messages.length])
 
   async function loadOlder() {
@@ -177,18 +181,73 @@ export default function TeamChat({ teamId }: { teamId: string }) {
     setMessages(prev => prev.filter(m => m.id !== msg.id))
   }
 
+  // Mark-as-read: when the user views the chat (and they're at the
+  // bottom), POST the latest message id to /api/team-unread so
+  // the next render shows zero unread.
+  async function markRead() {
+    const last = messages[messages.length - 1]
+    if (!last || last.id.startsWith('local-')) return
+    try {
+      await fetch('/api/team-unread', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ teamId, lastReadMessageId: last.id })
+      })
+      setUnread(0)
+    } catch {
+      // best-effort; next view will retry
+    }
+  }
+
+  // Poll unread count every 15s. (PRD §7.4 wants "unread counts";
+  // we don't have a realtime channel on team_message_reads, so a
+  // poll is the simplest reliable approach.)
+  useEffect(() => {
+    let cancelled = false
+    async function fetchUnread() {
+      try {
+        const r = await fetch(`/api/team-unread?teamId=${encodeURIComponent(teamId)}`)
+        if (!r.ok) return
+        const x = await r.json()
+        if (!cancelled) setUnread(typeof x.unread === 'number' ? x.unread : 0)
+      } catch {}
+    }
+    fetchUnread()
+    const id = setInterval(fetchUnread, 15000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [teamId])
+
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <p className="eyebrow">PRIVATE EXECUTION ROOM</p>
-        <span
-          className="muted"
-          style={{ fontSize: 11 }}
-          role="status"
-          aria-live="polite"
-        >
-          ● {status === 'live' ? t('chat.connected') : status === 'connecting' ? t('chat.connecting') : t('chat.offline')}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {unread > 0 && (
+            <span
+              role="status"
+              aria-live="polite"
+              style={{
+                background: 'var(--accent)',
+                color: '#10140c',
+                padding: '2px 8px',
+                fontSize: 11,
+                fontWeight: 700,
+                borderRadius: 12
+              }}
+              aria-label={`${unread} unread messages`}
+            >
+              {unread} new
+            </span>
+          )}
+          <span
+            className="muted"
+            style={{ fontSize: 11 }}
+            role="status"
+            aria-live="polite"
+          >
+            ● {status === 'live' ? t('chat.connected') : status === 'connecting' ? t('chat.connecting') : t('chat.offline')}
+          </span>
+        </div>
       </div>
       <div
         ref={scrollerRef}
