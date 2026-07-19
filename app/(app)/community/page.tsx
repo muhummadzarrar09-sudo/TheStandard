@@ -15,10 +15,33 @@ export default async function Community() {
         {posts.length ? (
           posts.map(p => (
             <article className="card" style={{ marginBottom: 12 }} key={p.id}>
-              <p className="eyebrow" style={{ color: 'var(--accent)' }}>OFFICIAL UPDATE</p>
-              <h2 style={{ fontSize: 19 }}>{p.title}</h2>
-              <p className="muted">{p.body}</p>
-              <small className="muted">{new Date(p.published_at).toLocaleDateString()}</small>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                <p className="eyebrow" style={{ color: 'var(--accent)', margin: 0 }}>
+                  {p.pinned ? 'PINNED · OFFICIAL UPDATE' : 'OFFICIAL UPDATE'}
+                </p>
+                <small className="muted" style={{ fontSize: 11 }}>
+                  {new Date(p.published_at).toLocaleDateString()} · v{p.version}
+                </small>
+              </div>
+              <h2 style={{ fontSize: 19, marginTop: 6 }}>{p.title}</h2>
+              <p className="muted" style={{ whiteSpace: 'pre-wrap' }}>{p.body}</p>
+              {(p.source_url || p.source_label) && (
+                <p style={{ margin: '12px 0 0', fontSize: 12 }}>
+                  <span className="muted">Source: </span>
+                  {p.source_url ? (
+                    <a
+                      href={p.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      {p.source_label || p.source_url}
+                    </a>
+                  ) : (
+                    <span>{p.source_label}</span>
+                  )}
+                </p>
+              )}
             </article>
           ))
         ) : (
