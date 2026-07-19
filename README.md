@@ -58,9 +58,12 @@ Node 22 is required (`engines` in `package.json`).
 - `supabase/` — migrations and Edge Functions. See `supabase/README.md`
   (or the comments in each function) for deploy details.
 - `tests/` — Vitest unit tests for the domain layer.
+- `e2e/` — Playwright e2e specs (`.e2e.ts` extension so vitest
+  doesn't pick them up; configured in `playwright.config.ts`).
 - `public/` — service worker, manifest, offline fallback, icons.
 - `types/` — shared TypeScript types.
-- `docs/` — the PRD, phase plans, audit and refinement plan.
+- `docs/` — the PRD, phase plans, audit and refinement plan,
+  observability + threat model + backup-and-retention runbooks.
 - `prototypes/` — disposable visual prototypes. Not part of the production
   build. Kept as a reference for the design language.
 
@@ -173,8 +176,10 @@ repo secret.
 
 - `scripts/backup.sh` — daily `pg_dump` with custom format + 14-day
   local retention. See `docs/backup-and-retention.md`.
-- `scripts/rls-test.sh` — runs the per-table RLS assertions in
-  `supabase/tests/rls_smoke.sql` and reports pass/fail per block.
+- `scripts/backup-ship.sh` — ships the latest dump to S3 with a
+  date-folder key layout. Run from cron after `backup.sh`.
+- `scripts/rls-test.sh` — runs the per-table RLS assertions in every
+  `supabase/tests/*.sql` file and reports pass/fail per block.
 
 ## Deployment
 

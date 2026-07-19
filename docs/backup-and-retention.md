@@ -30,6 +30,20 @@ BACKUP_KEEP_DAYS=14
   policy. The 30-day mark is the absolute floor for the
   cohort-window — the longest cohort is 30 days, so a month of
   backups covers any single cohort's full lifecycle.
+
+`scripts/backup-ship.sh` ships the latest dump to S3 with a
+date-folder key layout (`db/YYYY/MM/<filename>.dump`) so lifecycle
+policies and restores are easy. Recommended S3 lifecycle:
+
+- Transition to GLACIER after 30 days.
+- Expire after 365 days.
+
+Run `backup-ship.sh` from cron after `backup.sh`:
+
+```
+BACKUP_DIR=/var/backups/discipline-os S3_BUCKET=s3://...
+0 4 * * * /opt/discipline-os/scripts/backup-ship.sh
+```
 - Off-region: replicate the S3 bucket cross-region. Supabase
   already replicates the live DB cross-region; backups are the
   point-in-time safety net for accidental writes, not for region
