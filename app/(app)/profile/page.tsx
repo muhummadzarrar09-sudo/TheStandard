@@ -43,31 +43,59 @@ export default async function Profile() {
       <p className="eyebrow">ACCOUNT · PROFILE</p>
       <h1>Your member profile.</h1>
 
-      <section className="card" style={{ marginTop: 30 }} aria-label="Identity">
-        <p className="eyebrow">IDENTITY</p>
-        <h2>{profile?.display_name || 'Member'}</h2>
-        <p className="muted">{profile?.email || ''}</p>
-        <p className="muted">Email is managed through passwordless authentication — there is no password to change.</p>
+      <section className="card" style={{ marginTop: 30 }} aria-labelledby="profile-identity">
+        <p className="eyebrow" id="profile-identity">IDENTITY</p>
+        <h2 style={{ margin: '6px 0 0' }}>{profile?.display_name || 'Member'}</h2>
+        <p className="muted" style={{ margin: '4px 0 0' }}>{profile?.email || ''}</p>
+        <p className="muted" style={{ marginTop: 12 }}>
+          Email is managed through passwordless authentication — there is no password to change.
+        </p>
       </section>
 
-      <section className="card" style={{ marginTop: 15 }} aria-label="Timezone">
-        <p className="eyebrow">TIMEZONE</p>
-        <p>{profile?.timezone || 'UTC'}</p>
-        <p className="muted">
+      <section className="card" style={{ marginTop: 15 }} aria-labelledby="profile-timezone">
+        <p className="eyebrow" id="profile-timezone">TIMEZONE</p>
+        <p style={{ margin: '6px 0 0', fontSize: 16 }}>{profile?.timezone || 'UTC'}</p>
+        <p className="muted" style={{ marginTop: 12 }}>
           The detected timezone is used to compute your local date, schedule day boundary, and cutoff time. You can change it from <Link href="/settings">Settings</Link>.
         </p>
       </section>
 
-      <section className="card" style={{ marginTop: 15 }} aria-label="Cohort">
-        <p className="eyebrow">COHORT</p>
-        <p>{cohortName}{cohortDay ? ` · Day ${cohortDay} of ${totalDays}` : ''}</p>
-        {cohortStart && <p className="muted">Starts {cohortStart.toISOString().slice(0, 10)}{cohortEnd ? ` · ends ${cohortEnd.toISOString().slice(0, 10)}` : ''}</p>}
-        {profile?.access_start_at && (
-          <p className="muted">Access opens {new Date(profile.access_start_at).toISOString().slice(0, 10)}</p>
-        )}
-        {profile?.access_end_at && (
-          <p className="muted">Access closes {new Date(profile.access_end_at).toISOString().slice(0, 10)}</p>
-        )}
+      <section className="card" style={{ marginTop: 15 }} aria-labelledby="profile-cohort">
+        <p className="eyebrow" id="profile-cohort">COHORT</p>
+        <dl style={{ margin: '6px 0 0', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 18px' }}>
+          <dt className="muted" style={{ fontSize: 11, letterSpacing: '.1em' }}>NAME</dt>
+          <dd style={{ margin: 0 }}>{cohortName}</dd>
+          {cohortDay !== null && (
+            <>
+              <dt className="muted" style={{ fontSize: 11, letterSpacing: '.1em' }}>DAY</dt>
+              <dd style={{ margin: 0 }}>Day {cohortDay} of {totalDays}</dd>
+            </>
+          )}
+          {cohortStart && (
+            <>
+              <dt className="muted" style={{ fontSize: 11, letterSpacing: '.1em' }}>START</dt>
+              <dd style={{ margin: 0 }}>{cohortStart.toISOString().slice(0, 10)}</dd>
+            </>
+          )}
+          {cohortEnd && (
+            <>
+              <dt className="muted" style={{ fontSize: 11, letterSpacing: '.1em' }}>END</dt>
+              <dd style={{ margin: 0 }}>{cohortEnd.toISOString().slice(0, 10)}</dd>
+            </>
+          )}
+          {profile?.access_start_at && (
+            <>
+              <dt className="muted" style={{ fontSize: 11, letterSpacing: '.1em' }}>ACCESS OPENS</dt>
+              <dd style={{ margin: 0 }}>{new Date(profile.access_start_at).toISOString().slice(0, 10)}</dd>
+            </>
+          )}
+          {profile?.access_end_at && (
+            <>
+              <dt className="muted" style={{ fontSize: 11, letterSpacing: '.1em' }}>ACCESS CLOSES</dt>
+              <dd style={{ margin: 0 }}>{new Date(profile.access_end_at).toISOString().slice(0, 10)}</dd>
+            </>
+          )}
+        </dl>
       </section>
     </AppShell>
   )

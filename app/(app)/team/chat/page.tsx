@@ -60,10 +60,10 @@ export default async function Chat() {
     <AppShell items={RAIL}>
       <Link href="/team" className="muted">← {team.name}</Link>
       <p className="eyebrow" style={{ marginTop: 30 }}>
-        PRIVATE EXECUTION ROOM · {memberCount ?? 0} MEMBER{(memberCount ?? 0) === 1 ? '' : 'S'}
+        TEAM · {team.name.toUpperCase()} · {memberCount ?? 0} MEMBER{(memberCount ?? 0) === 1 ? '' : 'S'}
       </p>
       <h1>{t('chat.heading')}</h1>
-      <div style={{ marginTop: 30 }} aria-label={t('chat.heading')}>
+      <div style={{ marginTop: 30 }}>
         <TeamChat teamId={team.id} />
       </div>
     </AppShell>

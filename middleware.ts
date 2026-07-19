@@ -1,14 +1,44 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRequestId, REQUEST_ID_HEADER } from './lib/request-context'
+import { generateNonce, CSP_NONCE_HEADER } from './lib/csp-nonce'
 
 export async function middleware(request: NextRequest) {
   // Resolve (or generate) a request id and stamp it on the response so
   // every protected page, every API call, and every static asset gets
   // a correlation id.
   const requestId = resolveRequestId(request)
-  let response = NextResponse.next({ request })
+  // Per-request CSP nonce. Forwarded to downstream server components
+  // via a request header (next/headers reads it from there) and
+  // embedded in the CSP that this middleware sets on the response.
+  const nonce = generateNonce()
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set(CSP_NONCE_HEADER, nonce)
+
+  const isDev = process.env.NODE_ENV !== 'production'
+  // In dev, allow inline scripts so Next.js's HMR + boot scripts run.
+  // In production, the nonce is the only escape hatch; without it
+  // inline scripts are blocked.
+  const scriptSrc = isDev
+    ? "'self' 'unsafe-inline' 'unsafe-eval'"
+    : `'self' 'nonce-${nonce}'`
+  const csp = [
+    "default-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    `script-src ${scriptSrc}`,
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.vercel.app",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'"
+  ].join('; ')
+
+  let response = NextResponse.next({ request: { headers: requestHeaders } })
   response.headers.set(REQUEST_ID_HEADER, requestId)
+  response.headers.set(CSP_NONCE_HEADER, nonce)
+  response.headers.set('Content-Security-Policy', csp)
 
   // Build a Supabase client bound to the request/response cookie jars.
   const supabase = createServerClient(
@@ -42,14 +72,18 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/profile')
 
   if (protectedPath && !user) {
-    return NextResponse.redirect(new URL('/login', request.url), {
-      headers: { [REQUEST_ID_HEADER]: requestId }
-    })
+    const r = NextResponse.redirect(new URL('/login', request.url))
+    r.headers.set(REQUEST_ID_HEADER, requestId)
+    r.headers.set(CSP_NONCE_HEADER, nonce)
+    r.headers.set('Content-Security-Policy', csp)
+    return r
   }
   if (path.startsWith('/admin') && !user) {
-    return NextResponse.redirect(new URL('/login', request.url), {
-      headers: { [REQUEST_ID_HEADER]: requestId }
-    })
+    const r = NextResponse.redirect(new URL('/login', request.url))
+    r.headers.set(REQUEST_ID_HEADER, requestId)
+    r.headers.set(CSP_NONCE_HEADER, nonce)
+    r.headers.set('Content-Security-Policy', csp)
+    return r
   }
   return response
 }

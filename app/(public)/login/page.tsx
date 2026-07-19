@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createSupabaseBrowser } from '../../../lib/supabase/browser'
 import { t } from '../../../lib/copy'
 
 export default function Login() {
@@ -16,22 +15,44 @@ export default function Login() {
     setBusy(true)
     const normalized = email.trim().toLowerCase()
     try {
-      const gate = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/request-otp`, {
+      // 1. Request a one-time, email-bound token from our server. The
+      // server checks enrollment + access window; the response is
+      // always { ok: true } for any well-formed email so an attacker
+      // cannot enumerate who is enrolled.
+      const gate = await fetch('/api/auth/request-otp', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email: normalized })
       })
       if (!gate.ok) throw new Error('gate')
-      const db = createSupabaseBrowser()
-      const result = await db.auth.signInWithOtp({
-        email: normalized,
-        options: { shouldCreateUser: false }
+      const { token } = await gate.json()
+      if (!token) {
+        // Either the email is unknown or the access window is closed.
+        // Surface the same generic error to the user so the gate is
+        // indistinguishable from a "happy path" failure.
+        throw new Error('not_eligible')
+      }
+      // 2. The server is going to send the OTP email via Supabase.
+      // We trigger that by asking the server to issue the OTP code
+      // (the token is the gate; the code is sent through Supabase
+      // auth's OTP infrastructure so the email format matches the
+      // rest of the app).
+      const otp = await fetch('/api/auth/send-code', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: normalized, token })
       })
-      if (result.error) throw result.error
+      if (!otp.ok) throw new Error('send_failed')
       sessionStorage.setItem('discipline-login-email', normalized)
+      sessionStorage.setItem('discipline-login-token', token)
       router.push('/verify')
-    } catch {
-      setError(t('login.error'))
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : ''
+      if (msg === 'not_eligible') {
+        setError(t('login.error'))
+      } else {
+        setError(t('login.error'))
+      }
     } finally {
       setBusy(false)
     }
@@ -60,6 +81,7 @@ export default function Login() {
             onChange={e => setEmail(e.target.value)}
             placeholder="you@example.com"
             aria-describedby={error ? 'login-error' : undefined}
+            aria-invalid={error ? true : undefined}
             style={{
               padding: 14,
               width: '100%',

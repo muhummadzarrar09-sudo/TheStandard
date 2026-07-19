@@ -311,3 +311,103 @@ Scope:
 - [x] 3e — `.github/workflows/ci.yml`: Node 20/22 matrix, build artifact upload, RLS smoke job (gated), security-headers job.
 
 Tests: 328/328 passing (was 304, +24: 12 log-sinks + 12 sw-offline).
+
+---
+
+# Phase 4 — Client-ready polish
+
+A second-pass audit (same rigor as the prior phases) found ~50 gaps
+between "ready to launch" and "ready to ship to a real client." This
+phase closes the high-leverage ones.
+
+Scope:
+- 4a: Security — close the 2-year-old request-otp bypass with a
+  server-issued, single-use, email-bound HMAC token; rewrite the
+  client login to never call signInWithOtp directly; add CSP nonce
+  for the inline theme bootstrap; scope admin mutations to the
+  admin's own cohort.
+- 4b: Reliability — wrap `/api/commitments` and `/api/admin/export`
+  in the standard error/request-id/access-log wrappers; add
+  try/catch and explicit user feedback to every client-side fetch
+  call (DailyCheckin, WeeklyCommitment, MilestoneList, TeamChat).
+- 4c: UX + a11y — root `app/loading.tsx`; proper `<main id="main">`
+  on landing + 404; chat scrolls only when the user is at the
+  bottom (no more yanking them down); chat input has a real label;
+  chat has `role="log"` + `aria-live`; save-state has
+  `aria-busy` + `aria-live="polite"`; schedule page is no longer
+  a static template picker (the buttons reflect real state).
+- 4d: Tests — extracted `lib/otp-token.ts` so the HMAC + nonce
+  logic is testable; 25 new tests across 3 files.
+- 4e: Docs — `PHASE0_LOG.md` updated.
+
+## Status
+- [x] 4a — `lib/otp-token.ts`: HMAC-SHA256 signed, time-bound (5min)
+  tokens; constant-time compare; nonce bookkeeping with bounded LRU.
+  8 unit tests.
+- [x] 4a — `app/api/auth/request-otp/route.ts`: rate-limited (5/10min),
+  generic OK for unknown emails, returns signed token only for
+  enrolled + access-window-open + cohort-not-closed members.
+- [x] 4a — `app/api/auth/send-code/route.ts`: gates the Supabase
+  generateLink call on a valid token. Per-IP rate limit (5/10min).
+- [x] 4a — `app/api/auth/verify-otp/route.ts`: server-side
+  verifyOtp, marks the nonce used to prevent replay, sets the
+  Supabase auth cookies on success. Per-IP rate limit (20/10min).
+- [x] 4a — `app/(public)/login/page.tsx` + `verify/page.tsx`:
+  rewritten to use the new flow. The client no longer calls
+  signInWithOtp directly. Wrong email → same generic error.
+- [x] 4a — `lib/csp-nonce.ts` + middleware: per-request nonce
+  generated and forwarded via `x-csp-nonce`; CSP set per-response
+  with the nonce in `script-src`. Dev keeps `'unsafe-inline'` for
+  HMR; production does not.
+- [x] 4a — `app/layout.tsx`: inline theme bootstrap uses the nonce
+  attribute; metadata expanded with proper title + description +
+  openGraph.
+- [x] 4a — `lib/admin/server-guard.ts`: now returns
+  `{ db, user, cohortId }`; new `requireServerAdminWithCohort()`
+  helper that throws 403 when the admin has no cohort.
+- [x] 4a — `app/api/admin/cohorts/route.ts`: returns only the
+  admin's own cohort (was: all cohorts).
+- [x] 4a — `app/api/admin/enrollment/route.ts`: rejects requests
+  targeting a cohort the admin doesn't manage.
+- [x] 4a — `app/api/admin/reports-list/route.ts`: requires the
+  admin to have a cohort; reports remain global.
+- [x] 4b — `app/api/commitments/route.ts`: wrapped in
+  withErrorHandling + withRequestIdHeader + withAccessLog;
+  `note` length-bounded; UUID check on `commitmentId`.
+- [x] 4b — `app/api/admin/export/route.ts`: wrapped in the standard
+  handlers; user_id added to the CSV; errors go through `log.error`.
+- [x] 4b — `components/tracker/DailyCheckin.tsx`: try/catch around
+  load + save; `aria-busy` on the button; live-region for save
+  status; reflection textarea has a label and counter.
+- [x] 4b — `components/tracker/WeeklyCommitment.tsx`: try/catch;
+  loaded-state guard; `role="checkbox"` + `aria-checked` on each
+  toggle; live-region status.
+- [x] 4b — `components/team/MilestoneList.tsx`: try/catch;
+  loaded-state guard; `aria-label` on each select; `aria-live`
+  status.
+- [x] 4b — `components/team/TeamChat.tsx`: `role="log"` +
+  `aria-live="polite"` on the scroller; `aria-label` on the
+  message input and send button; scroll-to-bottom only when the
+  user is at the bottom (sticky detection).
+- [x] 4c — `app/loading.tsx` (root): proper `<main id="main">` +
+  `aria-busy`.
+- [x] 4c — `app/page.tsx` (landing): expanded with og meta + a
+  "how it works" section + a real `<main id="main">`.
+- [x] 4c — `app/not-found.tsx`: expanded with explanation + dual
+  CTA + `<main id="main">`.
+- [x] 4c — `app/(app)/schedule/page.tsx`: each template now has a
+  description + status pill + stateful "Active" / "Locked" button
+  with `aria-disabled`; no more clickable dead buttons.
+- [x] 4c — `app/(app)/profile/page.tsx`: structured as
+  `<dl>` with proper `<dt>`/`<dd>` pairs.
+- [x] 4c — `app/(app)/team/chat/page.tsx`: removed the duplicate
+  "PRIVATE TEAM CHAT" eyebrow; the chat's own header is canonical.
+- [x] 4d — `tests/otp-token.test.ts`: 8 cases (sign/verify, expiry,
+  tamper, malformed, nonce reuse).
+- [x] 4d — `tests/teams-domain.test.ts`: 13 cases for the
+  `consecutiveDays` / `bestStreak` boundary cases (skip-today,
+  duplicates, longest run).
+- [x] 4d — `tests/milestones-guard.test.ts`: 4 cases for the
+  status enum.
+
+Tests: 353/353 passing (was 328, +25).
