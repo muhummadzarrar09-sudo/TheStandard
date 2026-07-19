@@ -12,6 +12,12 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServer } from '../../../../lib/supabase/server'
+// We import @supabase/supabase-js directly to use verifyOtp on the
+// service-role client. The supabase-js `verifyOtp` requires the
+// service role because the client is doing the OTP comparison
+// server-side. Safe because the route gates the call on a valid
+// token + matching email first.
+import { createClient } from '@supabase/supabase-js'
 import { withErrorHandling, withRequestIdHeader, withAccessLog } from '../../../../lib/api-handler'
 import { badRequest, toResponse } from '../../../../lib/api-errors'
 import { rateLimit } from '../../../../lib/rate-limit'
@@ -66,7 +72,6 @@ const handler = withErrorHandling(
       // We need the service-role client to call verifyOtp. The
       // service-role client doesn't have cookie bindings; we use it
       // purely to validate the OTP code and mint a session.
-      const { createClient } = await import('@supabase/supabase-js')
       const admin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,

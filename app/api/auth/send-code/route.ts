@@ -12,6 +12,12 @@
 // is the proof that the client has been pre-approved.
 
 import { NextRequest, NextResponse } from 'next/server'
+// We import @supabase/supabase-js directly (not via @supabase/ssr) to
+// get the admin generateLink API. The supabase-js package exports a
+// named `createClient` factory; calling it with the service-role key
+// gives us a client that bypasses RLS for the link-generation call
+// (which Supabase requires). This is safe because the route gates
+// the call on a valid OTP token first.
 import { createClient } from '@supabase/supabase-js'
 import { withErrorHandling, withRequestIdHeader, withAccessLog } from '../../../../lib/api-handler'
 import { badRequest, toResponse } from '../../../../lib/api-errors'
@@ -63,6 +69,12 @@ const handler = withErrorHandling(
         { auth: { persistSession: false, autoRefreshToken: false } }
       )
 
+      // generateLink returns a magic link URL. The URL contains the
+      // OTP token in its query string (?token=...). The email template
+      // the admin has configured is responsible for either showing
+      // the full URL or extracting the token and showing it as a
+      // 6-digit code. Either way, the user receives the code and
+      // enters it on /verify.
       // generateLink returns a magic link URL. The URL contains the
       // OTP token in its query string (?token=...). The email template
       // the admin has configured is responsible for either showing

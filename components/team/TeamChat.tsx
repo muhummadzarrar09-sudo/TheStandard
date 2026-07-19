@@ -3,21 +3,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { FormEvent } from 'react'
 import { createSupabaseBrowser } from '../../lib/supabase/browser'
-
-type Message = {
-  id: string
-  body: string
-  author_id: string
-  created_at: string
-  client_message_id?: string | null
-  delivery?: 'sending' | 'sent' | 'failed'
-}
+import { reconcile, type ChatMessage } from '../../lib/team-chat-reconcile'
 
 const PAGE_SIZE = 50
 const MAX_BODY = 2000
 
 export default function TeamChat({ teamId }: { teamId: string }) {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [status, setStatus] = useState<'connecting' | 'live' | 'offline'>('connecting')
   const [hasMore, setHasMore] = useState(false)
@@ -30,6 +22,12 @@ export default function TeamChat({ teamId }: { teamId: string }) {
   // scroll up to read history, new messages don't yank the viewport.
   const stickToBottomRef = useRef(true)
   const client = createSupabaseBrowser()
+
+  // Wrapper so the component's setMessages signature stays the same
+  // and the reducer stays a pure function (testable in isolation).
+  const dispatch = useCallback((event: Parameters<typeof reconcile>[1]) => {
+    setMessages(prev => reconcile(prev, event))
+  }, [])
 
   // Initial load + realtime subscription
   useEffect(() => {
@@ -64,28 +62,17 @@ export default function TeamChat({ teamId }: { teamId: string }) {
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'team_messages', filter: `team_id=eq.${teamId}` },
           (payload) => {
-            const m = payload.new as Message
-            setMessages(prev => {
-              if (m.client_message_id) {
-                const idx = prev.findIndex(p => p.client_message_id === m.client_message_id)
-                if (idx !== -1) {
-                  const next = prev.slice()
-                  next[idx] = { ...m, delivery: 'sent' }
-                  return next
-                }
-              }
-              if (prev.some(p => p.id === m.id)) return prev
-              return [...prev, { ...m, delivery: 'sent' }]
-            })
+            const m = payload.new as ChatMessage
+            dispatch({ type: 'realtime_insert', message: m })
           }
         )
         .on(
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'team_messages', filter: `team_id=eq.${teamId}` },
           (payload) => {
-            const m = payload.new as Message & { deleted_at?: string | null }
+            const m = payload.new as ChatMessage & { deleted_at?: string | null }
             if (m.deleted_at) {
-              setMessages(prev => prev.filter(p => p.id !== m.id))
+              dispatch({ type: 'realtime_update', id: m.id, deleted_at: m.deleted_at })
             }
           }
         )
@@ -96,7 +83,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
       active = false
       if (channel) client.removeChannel(channel)
     }
-  }, [teamId, client])
+  }, [teamId, client, dispatch])
 
   // Track whether the user is scrolled to the bottom. We use a ref so
   // the scroll handler doesn't re-render.
@@ -148,7 +135,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
       return
     }
     const clientMessageId = crypto.randomUUID()
-    const optimistic: Message = {
+    const optimistic: ChatMessage = {
       id: `local-${clientMessageId}`,
       body,
       author_id: userId,
@@ -156,7 +143,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
       client_message_id: clientMessageId,
       delivery: 'sending'
     }
-    setMessages(prev => [...prev, optimistic])
+    dispatch({ type: 'optimistic', message: optimistic })
     setInput('')
     setSendBusy(true)
     try {
@@ -171,23 +158,25 @@ export default function TeamChat({ teamId }: { teamId: string }) {
         .select('id, body, author_id, created_at, client_message_id')
         .single()
       if (error) {
-        setMessages(prev => prev.map(m => m.id === optimistic.id ? { ...m, delivery: 'failed' } : m))
+        dispatch({ type: 'fail', id: optimistic.id })
         setErrorMsg('Could not send. Tap retry.')
         return
       }
       if (data) {
-        setMessages(prev => prev.map(m => m.client_message_id === clientMessageId ? { ...data, delivery: 'sent' } : m))
+        dispatch({ type: 'ack', clientMessageId, serverMessage: data as ChatMessage })
       }
     } catch {
-      setMessages(prev => prev.map(m => m.id === optimistic.id ? { ...m, delivery: 'failed' } : m))
+      dispatch({ type: 'fail', id: optimistic.id })
       setErrorMsg('Could not send. Tap retry.')
     } finally {
       setSendBusy(false)
     }
   }
 
-  function retry(msg: Message) {
+  function retry(msg: ChatMessage) {
     setInput(msg.body)
+    // Remove the failed optimistic so the next send doesn't
+    // collide with a stale id.
     setMessages(prev => prev.filter(m => m.id !== msg.id))
   }
 

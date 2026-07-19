@@ -13,9 +13,37 @@
 
 import { createHmac, randomBytes, timingSafeEqual } from 'crypto'
 
-const SECRET = process.env.OTP_TOKEN_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || 'dev-only-insecure-secret'
-
 const MAX_NONCES = 10_000
+
+// Resolve the signing secret at call time, not at module load, so
+// tests can set process.env.OTP_TOKEN_SECRET before invoking.
+// In production, the secret MUST be set explicitly via env. We log a
+// loud warning when the dev fallback fires so it shows up in the
+// Vercel log explorer on the first deploy.
+function resolveSecret(): string {
+  const explicit = process.env.OTP_TOKEN_SECRET
+  if (explicit && explicit.length >= 32) return explicit
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (serviceRole && serviceRole.length >= 32) return serviceRole
+  // Last-resort fallback. The string is recognisable so a grep of
+  // the logs surfaces the misconfiguration immediately.
+  return 'dev-only-insecure-secret-DO-NOT-USE-IN-PROD'
+}
+
+function getSecret(): string {
+  // Cached on first call so we don't pay the env lookup on every
+  // sign/verify. The cache is invalidated in tests by resetSecret.
+  if (cachedSecret) return cachedSecret
+  cachedSecret = resolveSecret()
+  if (cachedSecret.startsWith('dev-only-insecure-secret')) {
+    // eslint-disable-next-line no-console
+    console.warn('[otp-token] Using dev-only secret. Set OTP_TOKEN_SECRET in production.')
+  }
+  return cachedSecret
+}
+
+let cachedSecret: string | null = null
+export function _resetOtpSecret(): void { cachedSecret = null }
 
 export type OtpTokenPayload = {
   email: string
@@ -24,7 +52,7 @@ export type OtpTokenPayload = {
 }
 
 function hmac(data: string): Buffer {
-  return createHmac('sha256', SECRET).update(data).digest()
+  return createHmac('sha256', getSecret()).update(data).digest()
 }
 
 function base64url(buf: Buffer): string {

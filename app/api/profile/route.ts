@@ -15,6 +15,12 @@ export async function GET(req: NextRequest): Promise<Response> {
   if (!user) return toResponse(serverError())
 
   const db = await createSupabaseServer()
+  // Explicit whitelist. The Profile page renders display_name, email,
+  // timezone, theme_preset, cohort_id, access_start_at, and
+  // access_end_at; we ship exactly those and nothing else. If a
+  // future migration adds a sensitive column (e.g. a service-role
+  // flag), it will not be returned by this route unless the
+  // whitelist is updated.
   const { data, error: qErr } = await db
     .from('profiles')
     .select('id, email, display_name, cohort_id, timezone, theme_preset, access_start_at, access_end_at')
