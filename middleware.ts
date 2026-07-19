@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRequestId, REQUEST_ID_HEADER } from './lib/request-context'
 import { generateNonce, CSP_NONCE_HEADER } from './lib/csp-nonce'
+import { csrfProtect } from './lib/csrf-middleware'
 
 export async function middleware(request: NextRequest) {
   // Resolve (or generate) a request id and stamp it on the response so
@@ -14,6 +15,18 @@ export async function middleware(request: NextRequest) {
   const nonce = generateNonce()
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set(CSP_NONCE_HEADER, nonce)
+
+  // CSRF: check the state-changing request before doing anything
+  // else. A 403 here short-circuits the rest of the pipeline. On
+  // safe methods, the helper also sets a fresh `csrf` cookie
+  // when one is missing, so the next POST from the same client
+  // has a token to send.
+  const csrfResponse = csrfProtect(request)
+  if (csrfResponse) {
+    csrfResponse.headers.set(REQUEST_ID_HEADER, requestId)
+    csrfResponse.headers.set(CSP_NONCE_HEADER, nonce)
+    return csrfResponse
+  }
 
   const isDev = process.env.NODE_ENV !== 'production'
   // In dev, allow inline scripts so Next.js's HMR + boot scripts run.

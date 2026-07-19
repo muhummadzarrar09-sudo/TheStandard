@@ -15,24 +15,43 @@ import type { LogEntry, LogSink } from './log'
 //   LOG_OTLP_HEADERS   — optional JSON object of extra headers
 //   LOG_OTLP_BATCH_MS  — optional; batch entries for N ms before flush
 //                        (default 0 = no batching)
-export function otlpHttpSink(options: { endpoint: string; headers?: Record<string, string> }): LogSink {
+//   LOG_OTLP_SERVICE   — optional; service.name attribute (default
+//                        'discipline-os')
+//   LOG_OTLP_VERSION   — optional; service.version attribute (default
+//                        '1.0.0')
+
+export function otlpHttpSink(options: {
+  endpoint: string
+  headers?: Record<string, string>
+  serviceName?: string
+  serviceVersion?: string
+}): LogSink {
+  const serviceName = options.serviceName || 'discipline-os'
+  const serviceVersion = options.serviceVersion || '1.0.0'
+  const start = typeof performance !== 'undefined' ? performance.timeOrigin : Date.now()
   return {
     name: 'otlp-http',
     emit(entry: LogEntry) {
       const envelope = {
-        // The shape is intentionally close to OTLP's
-        // ExportLogsServiceRequest so a collector can ingest with
-        // minimal mapping. This is not strict OTLP protobuf; it's
-        // JSON-with-OTLP-fields, which most collectors accept.
         resourceLogs: [
           {
-            resource: { attributes: { 'service.name': 'discipline-os' } },
+            resource: {
+              attributes: {
+                'service.name': serviceName,
+                'service.version': serviceVersion
+              }
+            },
             scopeLogs: [
               {
-                scope: { name: 'discipline-os', version: '1.0.0' },
+                scope: { name: serviceName, version: serviceVersion },
                 logRecords: [
                   {
-                    timeUnixNano: String(BigInt(Date.parse(entry.t)) * 1000000n),
+                    // The entry's t is ms-precise. The
+                    // observedTimeUnixNano (added Phase 9e)
+                    // gives the collector a sub-ms view of
+                    // when this shipper actually fired.
+                    timeUnixNano: timestampNanos(entry.t),
+                    observedTimeUnixNano: timestampNowNanos(start),
                     severityText: entry.level.toUpperCase(),
                     body: { stringValue: entry.msg },
                     attributes: flatAttributes(entry.ctx)
@@ -43,9 +62,6 @@ export function otlpHttpSink(options: { endpoint: string; headers?: Record<strin
           }
         ]
       }
-      // Best-effort, non-blocking. Failures are swallowed because a
-      // request handler must not be allowed to throw because of a
-      // logging hiccup.
       fetch(options.endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...(options.headers || {}) },
@@ -70,8 +86,6 @@ export function batchingSink(inner: LogSink, batchMs = 250): LogSink {
       clearTimeout(timer)
       timer = null
     }
-    // Hand each entry to the inner sink. If the inner sink is async
-    // (a fetch-based shipper), we let the runtime queue them.
     for (const entry of batch) {
       try {
         const r = inner.emit(entry)
@@ -93,6 +107,27 @@ export function batchingSink(inner: LogSink, batchMs = 250): LogSink {
   }
 }
 
+// A sink that runs two sinks in parallel. Useful for dual-piping
+// (e.g. console in dev + OTLP to prod, or Datadog + Sentry during
+// a migration). Failures in either sink are isolated.
+export function fanoutSink(sinks: LogSink[]): LogSink {
+  return {
+    name: 'fanout(' + sinks.map(s => s.name).join('+') + ')',
+    emit(entry: LogEntry) {
+      for (const s of sinks) {
+        try {
+          const r = s.emit(entry)
+          if (r && typeof (r as Promise<void>).catch === 'function') {
+            ;(r as Promise<void>).catch(() => {})
+          }
+        } catch {
+          // swallow
+        }
+      }
+    }
+  }
+}
+
 function flatAttributes(ctx: Record<string, unknown>): Array<{ key: string; value: { stringValue: string } }> {
   const out: Array<{ key: string; value: { stringValue: string } }> = []
   for (const [k, v] of Object.entries(ctx)) {
@@ -104,4 +139,24 @@ function flatAttributes(ctx: Record<string, unknown>): Array<{ key: string; valu
     }
   }
   return out
+}
+
+// Convert an ISO timestamp to nanoseconds. The entry's `t` was
+// produced by `new Date().toISOString()` at log-call time and is
+// millisecond-precise; we can recover ms but not sub-ms.
+function timestampNanos(iso: string): string {
+  const ms = Date.parse(iso)
+  if (!Number.isFinite(ms)) return '0'
+  return String(ms * 1_000_000)
+}
+
+// "Now" in nanoseconds, with sub-ms precision via performance.now().
+// Used for observedTimeUnixNano so the collector can compute
+// log-then-ship latency.
+function timestampNowNanos(timeOrigin: number): string {
+  let now = Date.now()
+  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+    now = timeOrigin + performance.now()
+  }
+  return String(Math.round(now * 1_000_000))
 }

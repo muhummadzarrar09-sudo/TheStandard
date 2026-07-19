@@ -120,20 +120,24 @@ stays the same.
 
 ### Cross-site request forgery (CSRF) on state-changing API routes
 
-**Why we accept this:** the Supabase SSR cookie is set with
-`SameSite=Lax` (the default for `@supabase/ssr`). A cross-origin
-attacker cannot read the cookie or include it in a forged
-request. Combined with the fact that all state-changing routes are
-`POST`/`PUT`/`PATCH`/`DELETE` (not `GET`), a CSRF attack would have
-to either exploit a Lax-bypass (a top-level navigation) or read the
-cookie, and neither is possible from a third-party origin in modern
-browsers.
+**Defense (Phase 9):** the middleware now enforces a
+double-submit CSRF token on every state-changing API route.
+The `csrf` cookie is set on the first safe request; the
+client-side `CsrfBootstrap` shim copies the cookie into a
+`x-csrf-token` header on every `POST`/`PUT`/`PATCH`/`DELETE`
+to a protected `/api/*` path. A 403 fires on a missing
+cookie, missing header, or mismatch. The auth + log +
+health + push-subscribe paths are explicitly unprotected
+(rate limit + OTP lockout are the defense there). The
+`Supabase SSR` `SameSite=Lax` cookie is now belt-and-suspenders
+rather than the only line.
 
-**When this stops being true:** if you add a cross-origin iframe
-embed or a custom `SameSite` setting, revisit. For belt and
-suspenders, a double-submit CSRF token on the state-changing
-endpoints is a 30-line change in `lib/api-handler.ts` — the wrapper
-shape is already there.
+**When this stops being true:** if you add a cross-origin
+embed that needs to call `/api/*` with state-changing
+methods, the shim is client-only — the embed-side caller
+would need to set the header explicitly. The `lib/csrf.ts`
+`UNPROTECTED_PREFIXES` list is the gate to add a new
+end-point to if you intend to skip the check.
 
 ### Compromised service-role key
 

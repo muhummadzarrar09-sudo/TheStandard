@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createSupabaseServer } from '../../../../lib/supabase/server'
 import SaveOfflineButton from '../../../../components/reports/SaveOfflineButton'
+import VersionBadge from '../../../../components/reports/VersionBadge'
 import AppShell from '../../../../components/ui/AppShell'
 import { MEMBER_RAIL } from '../../../../lib/nav'
 
@@ -26,9 +27,10 @@ export default async function ReportDetail({ params }: { params: Promise<{ id: s
       </p>
       <h1>{report.title}</h1>
       {report.interviewee && <p className="muted">Interview with {report.interviewee}</p>}
+      <VersionBadge reportId={id} currentVersion={report.version} />
       <article
         className="card"
-        style={{ marginTop: 35, lineHeight: 1.8 }}
+        style={{ marginTop: 18, lineHeight: 1.8 }}
         aria-label={`Report: ${report.title}`}
       >
         <p>{report.summary}</p>

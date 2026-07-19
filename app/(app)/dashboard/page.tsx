@@ -13,6 +13,7 @@ import WeeklyCommitment from '../../../components/tracker/WeeklyCommitment'
 import { t } from '../../../lib/copy'
 import { getScheduleForCohort } from '../../../lib/schedule-source'
 import { MEMBER_RAIL } from '../../../lib/nav'
+import SyncStatusIndicator from '../../../components/ui/SyncStatusIndicator'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,6 +106,9 @@ export default async function Dashboard() {
       </p>
       <h1>{t('today.heading')}</h1>
       <p className="muted">Timezone: {timezone}</p>
+      <div style={{ marginTop: -12, marginBottom: 12 }}>
+        <SyncStatusIndicator />
+      </div>
       <div className="grid">
         <section className="card" aria-label={t('today.completionEyebrow')}>
           <p className="eyebrow">{t('today.completionEyebrow')}</p>

@@ -67,6 +67,36 @@ jobs:
         if: env.SUPABASE_DB_URL == ''
         run: echo "SUPABASE_DB_URL not configured; skipping RLS smoke (expected for forks)."
 
+  e2e-smoke:
+    # Playwright e2e smoke. Runs only on the main branch (or
+    # manual dispatch) because it boots the dev server. Set
+    # E2E_FULL=1 to run the full suite; otherwise only the
+    # smoke spec executes.
+    name: E2E smoke
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Build app
+        env:
+          # Placeholders; the e2e suite doesn't need a real DB.
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+        run: npm run build
+      - name: Run e2e smoke
+        env:
+          E2E: '1'
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+        run: npx playwright test
+
   security-headers:
     # Verifies that the security headers the app sends are present and
     # well-formed. Runs against a built app served by `next start`.

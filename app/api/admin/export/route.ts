@@ -44,7 +44,7 @@ export const GET = withErrorHandling(
         'local_date,user_id,block_key,status,completed_at',
         ...(data || []).map(x =>
           [x.local_date, x.user_id, x.block_key, x.status, x.completed_at]
-            .map(v => `"${String(v ?? '').replaceAll('"', '""')}"`)
+            .map(v => `"${String(v ?? '').split('"').join('""')}"`)
             .join(',')
         )
       ]

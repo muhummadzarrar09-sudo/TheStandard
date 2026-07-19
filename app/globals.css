@@ -11,9 +11,10 @@
 
    The tokens below are:
      --bg, --surface, --line, --text, --muted, --accent  (palette)
-     --font, --font-scale                                  (typography)
+     --font, --font-scale, --letter-spacing                (typography)
      --radius, --radius-lg                                 (component shape)
      --density, --gap                                       (layout density)
+     --motion-mode, --motion-scale                          (motion)
    Each preset overrides the set. Components use the tokens via
    var(--token) so a preset switch is a one-attribute change.
    ====================================================================== */
@@ -33,6 +34,7 @@
   --font: Manrope, system-ui, sans-serif;
   --font-scale: 1;
   --line-height: 1.5;
+  --letter-spacing: 0em;
 
   /* Base shape. */
   --radius: 4px;
@@ -41,6 +43,10 @@
   /* Base density. -1 = compact, 0 = balanced, +1 = spacious. */
   --density: 1;
   --gap: 24px;
+
+  /* Base motion. */
+  --motion-mode: standard;
+  --motion-scale: 1;
 }
 
 * { box-sizing: border-box }
@@ -50,6 +56,8 @@ body {
   color: var(--text);
   font: 14px/var(--line-height) var(--font);
   font-size: calc(14px * var(--font-scale));
+  letter-spacing: var(--letter-spacing);
+  transition: background-color calc(0.2s * var(--motion-scale)) ease;
 }
 a { color: inherit; text-decoration: none }
 
@@ -86,9 +94,7 @@ a { color: inherit; text-decoration: none }
   border: 1px solid var(--line);
   padding: calc(18px + var(--density) * 3px);
   border-radius: var(--radius-lg);
-  /* Per-preset motion: spacious presets get a slow transition,
-     compact presets don't. */
-  transition: background-color calc(0.2s * var(--density)) ease;
+  transition: background-color calc(0.2s * var(--motion-scale)) ease;
 }
 .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: calc(12px + var(--gap) * 0.3) }
 .button {
@@ -117,7 +123,7 @@ a { color: inherit; text-decoration: none }
    ====================================================================== */
 
 /* Whoop / Oura: dark, premium, sparse, large single metrics.
-   Spacious density, large radius, Manrope. */
+   Spacious density, large radius, Manrope. Calm motion. */
 :root[data-theme="whoop-oura"] {
   --bg: #090a0b; --surface: #111415; --line: #29302f;
   --text: #eef2ed; --muted: #899390; --accent: #c7f36b;
@@ -125,13 +131,17 @@ a { color: inherit; text-decoration: none }
   --font: Manrope, system-ui, sans-serif;
   --font-scale: 1.05;
   --line-height: 1.55;
+  --letter-spacing: -0.005em;
   --radius: 6px;
   --radius-lg: 8px;
   --density: 1;
   --gap: 32px;
+  --motion-mode: calm;
+  --motion-scale: 0.6;
 }
 
-/* Linear: sharp, monochrome, compact, keyboard-friendly. */
+/* Linear: sharp, monochrome, compact, keyboard-friendly.
+   Tight tracking, snappy motion. */
 :root[data-theme="linear"] {
   --bg: #0d0d0f; --surface: #151518; --line: #2b2b31;
   --text: #f5f5f5; --muted: #85858e; --accent: #8ab4ff;
@@ -139,13 +149,17 @@ a { color: inherit; text-decoration: none }
   --font: Inter, system-ui, sans-serif;
   --font-scale: 0.95;
   --line-height: 1.45;
+  --letter-spacing: -0.015em;
   --radius: 4px;
   --radius-lg: 6px;
   --density: -1;
   --gap: 18px;
+  --motion-mode: standard;
+  --motion-scale: 0.4;
 }
 
-/* Duolingo: playful progress, streak emphasis, energetic. */
+/* Duolingo: playful progress, streak emphasis, energetic.
+   Normal tracking, energetic motion. */
 :root[data-theme="duolingo"] {
   --bg: #f4f7f4; --surface: #fff; --line: #d9e2dc;
   --text: #18231e; --muted: #63756c; --accent: #48b86a;
@@ -153,13 +167,17 @@ a { color: inherit; text-decoration: none }
   --font: Nunito, system-ui, sans-serif;
   --font-scale: 1.05;
   --line-height: 1.55;
+  --letter-spacing: 0;
   --radius: 16px;
   --radius-lg: 20px;
   --density: 1;
   --gap: 28px;
+  --motion-mode: energetic;
+  --motion-scale: 1.2;
 }
 
-/* Robinhood-inspired: clean fintech, confident type. */
+/* Robinhood-inspired: clean fintech, confident type.
+   Normal tracking, snappy motion. */
 :root[data-theme="robinhood"] {
   --bg: #f7f8f8; --surface: #ffffff; --line: #dfe6e2;
   --text: #13231b; --muted: #687871; --accent: #00a86b;
@@ -167,13 +185,17 @@ a { color: inherit; text-decoration: none }
   --font: Inter, system-ui, sans-serif;
   --font-scale: 1;
   --line-height: 1.5;
+  --letter-spacing: -0.005em;
   --radius: 3px;
   --radius-lg: 5px;
   --density: 0;
   --gap: 22px;
+  --motion-mode: standard;
+  --motion-scale: 0.5;
 }
 
-/* Arc-inspired: bold color fields, editorial cards, members-club. */
+/* Arc-inspired: bold color fields, editorial cards, members-club.
+   Wide tracking, slow motion. */
 :root[data-theme="arc"] {
   --bg: #17132a; --surface: #241d3d; --line: #443666;
   --text: #faf7ff; --muted: #aaa0c5; --accent: #ff8ebd;
@@ -181,13 +203,17 @@ a { color: inherit; text-decoration: none }
   --font: Manrope, system-ui, sans-serif;
   --font-scale: 1.08;
   --line-height: 1.6;
+  --letter-spacing: 0.01em;
   --radius: 18px;
   --radius-lg: 24px;
   --density: 1;
   --gap: 36px;
+  --motion-mode: standard;
+  --motion-scale: 1.5;
 }
 
-/* Discord-inspired: dense channel/feed structure, strong nav. */
+/* Discord-inspired: dense channel/feed structure, strong nav.
+   Tight tracking, instant motion. */
 :root[data-theme="discord"] {
   --bg: #313338; --surface: #2b2d31; --line: #1e1f22;
   --text: #f2f3f5; --muted: #b5bac1; --accent: #5865f2;
@@ -195,10 +221,13 @@ a { color: inherit; text-decoration: none }
   --font: Inter, system-ui, sans-serif;
   --font-scale: 0.95;
   --line-height: 1.45;
+  --letter-spacing: -0.01em;
   --radius: 8px;
   --radius-lg: 10px;
   --density: -1;
   --gap: 16px;
+  --motion-mode: calm;
+  --motion-scale: 0.3;
 }
 
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
@@ -211,6 +240,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 h1, h2, h3, p { max-width: 70ch }
+
+h1 {
+  font-size: calc(28px * var(--font-scale));
+  line-height: 1.15;
+  letter-spacing: var(--letter-spacing);
+  margin: 0 0 12px;
+}
+h2 {
+  font-size: calc(20px * var(--font-scale));
+  line-height: 1.2;
+  letter-spacing: var(--letter-spacing);
+  margin: 0 0 10px;
+}
+h3 {
+  font-size: calc(16px * var(--font-scale));
+  line-height: 1.3;
+  letter-spacing: var(--letter-spacing);
+  margin: 0 0 8px;
+}
 
 /* ----------------------------------------------------------------------
  * Reusable utility classes

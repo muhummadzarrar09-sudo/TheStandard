@@ -34,7 +34,7 @@ describe('globals.css theme system', () => {
       css.indexOf(':root {'),
       css.indexOf('}', css.indexOf(':root {'))
     )
-    for (const token of ['--bg', '--surface', '--line', '--text', '--muted', '--accent', '--accent-text', '--danger', '--font', '--radius', '--density', '--gap']) {
+    for (const token of ['--bg', '--surface', '--line', '--text', '--muted', '--accent', '--accent-text', '--danger', '--font', '--font-scale', '--letter-spacing', '--radius', '--density', '--gap', '--motion-mode', '--motion-scale']) {
       expect(rootBody, `missing ${token} in :root`).toContain(token + ':')
     }
   })
@@ -47,10 +47,33 @@ describe('globals.css theme system', () => {
       const start = css.indexOf('{', idx)
       const end = css.indexOf('}', start)
       const body = css.slice(start + 1, end)
-      for (const token of ['--bg', '--surface', '--line', '--text', '--muted', '--accent', '--accent-text', '--danger']) {
+      for (const token of ['--bg', '--surface', '--line', '--text', '--muted', '--accent', '--accent-text', '--danger', '--letter-spacing', '--motion-mode', '--motion-scale']) {
         expect(body, `preset ${preset} missing ${token}`).toContain(token + ':')
       }
     }
+  })
+
+  it('h1/h2/h3 use the --letter-spacing token (per-preset kerning)', () => {
+    expect(css).toMatch(/h1\s*\{[^}]*letter-spacing:\s*var\(--letter-spacing\)/)
+    expect(css).toMatch(/h2\s*\{[^}]*letter-spacing:\s*var\(--letter-spacing\)/)
+    expect(css).toMatch(/h3\s*\{[^}]*letter-spacing:\s*var\(--letter-spacing\)/)
+  })
+
+  it('the .card transition uses --motion-scale (per-preset motion)', () => {
+    expect(css).toMatch(/\.card[^{]*\{[^}]*transition:[^}]*var\(--motion-scale\)/)
+  })
+
+  it('every preset has a different --motion-scale (so they are visually distinct)', () => {
+    const scales = presets.map(p => {
+      const idx = css.indexOf(`[data-theme="${p}"]`)
+      const start = css.indexOf('{', idx)
+      const end = css.indexOf('}', start)
+      const body = css.slice(start + 1, end)
+      const m = body.match(/--motion-scale:\s*([0-9.]+)/)
+      return m ? Number(m[1]) : null
+    })
+    const unique = new Set(scales)
+    expect(unique.size, 'every preset should have a unique --motion-scale').toBeGreaterThan(2)
   })
 
   it('the .button class uses var(--accent-text), not a hardcoded hex', () => {

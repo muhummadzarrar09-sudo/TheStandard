@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { t, supportedLocales, defaultLocale, type CopyKey } from '../lib/copy'
 
+import { resolveLocale } from '../lib/copy'
+
 describe('copy table', () => {
   it('defaultLocale is in supportedLocales', () => {
     expect(supportedLocales).toContain(defaultLocale)
@@ -20,6 +22,70 @@ describe('copy table', () => {
   it('substitutes strings too', () => {
     expect(t('verify.subtitle', 'en', { email: 'a@b.com' }))
       .toBe('Code sent to a@b.com · expires shortly · one use only.')
+  })
+
+  it('every key has a Spanish translation (es)', () => {
+    // A missing es key would surface the English fallback to a
+    // Spanish-speaking user. Pin every key.
+    // Use a probe: t('foo', 'es', {}) for each declared key
+    // should NOT return the key itself (which would mean the
+    // es value is missing).
+    const keys: CopyKey[] = [
+      'app.brand', 'app.brandSub', 'app.tagline', 'app.howItWorksEyebrow',
+      'login.heading', 'login.subtitle', 'login.emailLabel', 'login.submit', 'login.sending', 'login.error',
+      'verify.heading', 'verify.subtitle', 'verify.codeLabel', 'verify.submit', 'verify.error', 'verify.resend', 'verify.invalidCode',
+      'today.heading', 'today.completionEyebrow', 'today.upNextEyebrow',
+      'tracker.heading', 'tracker.currentStreak', 'tracker.bestStreak', 'tracker.weeklyReview', 'tracker.daysOf',
+      'leaderboard.heading', 'leaderboard.subtitle', 'leaderboard.viewAll', 'leaderboard.viewTeam', 'leaderboard.viewWeek',
+      'team.heading', 'team.emptyTitle', 'team.emptyDetail', 'team.objective', 'team.cadence', 'team.openChat',
+      'team.progressCategory', 'team.progressCategoryUpdate', 'team.progressCategoryBlocker',
+      'team.progressCategoryMilestone', 'team.progressCategoryIdea',
+      'team.chatEyebrow', 'team.chatNotAssigned', 'team.chatPendingTitle', 'team.chatPendingBody',
+      'chat.heading', 'chat.eyebrow', 'chat.empty', 'chat.send', 'chat.sending', 'chat.failed',
+      'chat.retry', 'chat.offline', 'chat.connected', 'chat.connecting',
+      'chat.loadOlder', 'chat.loadingMore', 'chat.inputPlaceholder', 'chat.inputLabel',
+      'chat.sendLabel', 'chat.retryAria', 'chat.errorNotSignedIn', 'chat.errorSendFailed',
+      'settings.heading', 'settings.themeEyebrow', 'settings.themeDescription',
+      'settings.notificationsEyebrow', 'settings.securityEyebrow', 'settings.devicesLink',
+      'notFound.eyebrow', 'notFound.title', 'notFound.body', 'notFound.cta', 'notFound.signin',
+      'loading.eyebrow', 'loading.title', 'loading.body',
+      'public.memberAccess', 'public.verifyEmail',
+      'app.memberSignin', 'app.landingCta',
+      'app.howItWorks1', 'app.howItWorks2', 'app.howItWorks3', 'app.howItWorks4',
+      'rail.today', 'rail.schedule', 'rail.tracker', 'rail.team', 'rail.teamChat',
+      'rail.leaderboard', 'rail.reports', 'rail.community', 'rail.settings', 'rail.profile',
+      'rail.admin.members', 'rail.admin.enrollment', 'rail.admin.teams',
+      'rail.admin.schedule', 'rail.admin.analytics', 'rail.admin.reports',
+      'skipToContent',
+      'today.allCompleteTitle', 'today.allCompleteDetail', 'today.dayLabel',
+      'leaderboard.colRank', 'leaderboard.colMember', 'leaderboard.colStreak', 'leaderboard.colDays',
+      'leaderboard.colComplete', 'leaderboard.colWeek',
+      'leaderboard.empty', 'leaderboard.unavailable', 'leaderboard.tieExplanation',
+      'sync.indicatorAria',
+      'team.chatPendingEyebrow',
+      'chat.ariaYouAt', 'chat.ariaTeammateAt',
+      'verify.sentNew', 'verify.resendFailed', 'verify.codeInputAria', 'verify.verifying'
+    ] as CopyKey[]
+    for (const key of keys) {
+      const v = t(key, 'es')
+      // t() returns the key itself when the es value is missing
+      expect(v, `${key} has no es value`).not.toBe(key)
+    }
+  })
+
+  it('resolveLocale respects the cookie', () => {
+    expect(resolveLocale({ cookie: 'es' })).toBe('es')
+    expect(resolveLocale({ cookie: 'en' })).toBe('en')
+  })
+
+  it('resolveLocale falls back to Accept-Language when no cookie is set', () => {
+    expect(resolveLocale({ acceptLanguage: 'es-ES,es;q=0.9' })).toBe('es')
+    expect(resolveLocale({ acceptLanguage: 'en-US,en;q=0.9' })).toBe('en')
+    expect(resolveLocale({ acceptLanguage: 'fr-FR' })).toBe('en')
+  })
+
+  it('resolveLocale defaults to English when no signal', () => {
+    expect(resolveLocale({})).toBe('en')
   })
 
   it('leaves unresolved placeholders in place', () => {
@@ -61,6 +127,7 @@ describe('copy table', () => {
       'leaderboard.colComplete', 'leaderboard.colWeek',
       'leaderboard.empty', 'leaderboard.unavailable',
       'leaderboard.tieExplanation',
+      'sync.indicatorAria',
       'team.progressCategory', 'team.progressCategoryUpdate',
       'team.progressCategoryBlocker', 'team.progressCategoryMilestone',
       'team.progressCategoryIdea',

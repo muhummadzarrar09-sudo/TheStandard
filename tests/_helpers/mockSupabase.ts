@@ -8,7 +8,7 @@ type TableState = Record<string, any[]>
 
 export type SupabaseMockOptions = {
   user?: { id: string; email?: string } | null
-  tables?: Record<string, any[]>
+  tables?: Record<string, TableState>
   // Optional override for specific table queries. The key is the
   // table name; the value is a function that receives the chain
   // arguments and returns the data (or throws). This lets a test

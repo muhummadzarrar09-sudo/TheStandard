@@ -2,6 +2,7 @@ import './globals.css'
 import { ThemeProvider } from '../themes/theme-provider'
 import { presets } from '../themes'
 import ServiceWorkerRegistration from '../components/pwa/ServiceWorkerRegistration'
+import CsrfBootstrap from '../components/pwa/CsrfBootstrap'
 import SkipLink from '../components/ui/SkipLink'
 import { getCspNonce } from '../lib/csp-nonce'
 
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SkipLink />
         <ThemeProvider>
+          <CsrfBootstrap />
           <ServiceWorkerRegistration />
           {children}
         </ThemeProvider>
