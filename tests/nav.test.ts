@@ -48,9 +48,9 @@ describe('shared navigation rails', () => {
     expect(PROFILE_RAIL.find(r => r.href === '/profile')).toBeTruthy()
   })
 
-  it('ADMIN_RAIL contains the four admin surfaces', () => {
+  it('ADMIN_RAIL contains the five admin surfaces', () => {
     expect(ADMIN_RAIL.map(r => r.href)).toEqual([
-      '/admin/members', '/admin/enrollment', '/admin/analytics', '/admin/reports'
+      '/admin/members', '/admin/enrollment', '/admin/teams', '/admin/analytics', '/admin/reports'
     ])
   })
 })

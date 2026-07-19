@@ -40,6 +40,7 @@ export const PROFILE_RAIL = [
 export const ADMIN_RAIL = [
   { href: '/admin/members', key: 'rail.admin.members' as const },
   { href: '/admin/enrollment', key: 'rail.admin.enrollment' as const },
+  { href: '/admin/teams', key: 'rail.admin.teams' as const },
   { href: '/admin/analytics', key: 'rail.admin.analytics' as const },
   { href: '/admin/reports', key: 'rail.admin.reports' as const }
 ]
