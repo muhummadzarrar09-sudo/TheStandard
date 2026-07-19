@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 # RLS smoke-test runner. Connects to a Supabase Postgres database,
-# applies each `@block` from supabase/tests/rls_smoke.sql as a
-# sub-transaction with `set local role authenticated`, and reports
-# pass/fail per block.
+# applies each `@block` from supabase/tests/*.sql (one block at a
+# time, with `set local role authenticated`), and reports pass/fail
+# per block. Pass = the action was blocked (`_blocked=` notice).
+# Fail = the action was allowed (`_succeeded` notice).
 #
 # Required env:
 #   SUPABASE_DB_URL  — Postgres connection string for a freshly-
 #                      migrated Supabase test instance (or a local
 #                      `supabase start`).
-#
-# Optional env:
-#   RLS_USER_ID      — UUID of a member to scope the role-switch
-#                      context to. Defaults to a sentinel UUID.
 #
 # Usage:
 #   SUPABASE_DB_URL=postgres://postgres:postgres@localhost:54322/postgres \
@@ -31,50 +28,55 @@ if ! command -v psql >/dev/null 2>&1; then
   exit 2
 fi
 
-TEST_FILE="supabase/tests/rls_smoke.sql"
-if [[ ! -f "$TEST_FILE" ]]; then
-  echo "Missing $TEST_FILE" >&2
+# Find every SQL file under supabase/tests/ except the ones
+# intentionally excluded. New test files are picked up
+# automatically; no runner change required.
+TEST_FILES=()
+for f in supabase/tests/*.sql; do
+  case "$f" in
+    *checklist*) continue ;; # manual checklist, not a runnable test
+  esac
+  TEST_FILES+=("$f")
+done
+
+if [[ ${#TEST_FILES[@]} -eq 0 ]]; then
+  echo "No SQL test files found under supabase/tests/" >&2
   exit 2
 fi
 
-# We expect the RLS policies to *block* member-level writes for
-# sensitive tables. The test file logs results via RAISE NOTICE
-# using the convention `<table>:<action>_blocked=<error>` or
-# `<table>:<action>_succeeded` (unexpected). We pass when every
-# block ends in `_blocked=` and fail on any `_succeeded`.
-#
-# This is a "negative" test: we want the database to refuse the
-# action, not to perform it. The success criterion is that no
-# `_succeeded` notice appears for an action that should be blocked.
+# Pass = the action was blocked (`_blocked=` notice).
+# Fail = the action was allowed (`_succeeded` notice).
+overall_ok=0
+overall_unexpected=0
+for TEST_FILE in "${TEST_FILES[@]}"; do
+  echo "=== $TEST_FILE ==="
+  psql "$SUPABASE_DB_URL" \
+    --set ON_ERROR_STOP=off \
+    --set AUTOCOMMIT=on \
+    --single-transaction=off \
+    --quiet \
+    --no-psqlrc \
+    -v ON_ERROR_STOP=off \
+    -f "$TEST_FILE" 2>&1 \
+    | awk -v file="$TEST_FILE" '
+        /^[ \t]*$/ { next }
+        /succeeded=/ { ok++; next }
+        /succeeded$/ { unexpected++; print file ": FAIL:", $0; next }
+        /blocked=/ { ok++; next }
+        /_loaded/ { next }
+        { print $0 }
+        END {
+          print file ": " ok " blocks observed, " unexpected " unexpectedly succeeded"
+          if (unexpected > 0) exit_code = 1
+        }'
+  awk_rc=${PIPESTATUS[1]}
+  if [[ $awk_rc -ne 0 ]]; then
+    overall_unexpected=$((overall_unexpected + 1))
+  else
+    overall_ok=$((overall_ok + 1))
+  fi
+done
 
-psql "$SUPABASE_DB_URL" \
-  --set ON_ERROR_STOP=off \
-  --set AUTOCOMMIT=on \
-  --single-transaction=off \
-  --quiet \
-  --no-psqlrc \
-  -v ON_ERROR_STOP=off \
-  -f "$TEST_FILE" 2>&1 \
-  | awk -v expected='blocked' '
-      /^[ \t]*$/ { next }
-      /succeeded$/ { unexpected++; print "FAIL:", $0; next }
-      /blocked=/ { ok++; next }
-      /NOTICE:/ { next }
-      /rls_smoke_loaded/ { next }
-      { print $0 }
-      END {
-        print "---"
-        print "RLS smoke summary: " ok " blocked, " unexpected " unexpectedly succeeded"
-        if (unexpected > 0) exit 1
-      }'
-
-result=${PIPESTATUS[0]}
-
-# The awk pipeline always exits 0 if unexpected == 0. But psql
-# may have failed; capture that exit code too.
-if [[ $result -ne 0 ]]; then
-  echo "psql exited with $result" >&2
-  exit $result
-fi
-
-exit 0
+echo "---"
+echo "RLS smoke summary: $overall_ok files passed, $overall_unexpected files failed"
+exit $overall_unexpected

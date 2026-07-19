@@ -46,7 +46,7 @@ export default function ProgressHistory({
       </div>
       <div style={{ display: 'flex', gap: 15, marginTop: 14, fontSize: 11 }}>
         <span>
-          <i style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--accent)', marginRight: 5 }} />
+          <span aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--accent)', marginRight: 5 }} />
           Complete
         </span>
         <span className="muted">Empty days remain visible</span>
