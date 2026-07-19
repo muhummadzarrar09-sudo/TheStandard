@@ -262,3 +262,52 @@ Scope:
 - [x] 5e — PHASE0_LOG.md: this section
 
 Tests: 296/296 passing (was 288). Batch 5 commit lands with this log.
+
+---
+
+# Phase 3 — Operational hardening
+
+Move the codebase from "ready to launch" to "ready to operate." The
+prior phases made the app correct and accessible; this phase makes
+it observable, backup-able, and CI-enforced.
+
+Scope:
+- 3a: real logger abstraction. `lib/log.ts` now has a pluggable
+  `LogSink` interface; the default `consoleSink` is what the app
+  uses today, but a single `setSink()` call swaps in an OTLP HTTP
+  sink for prod aggregators. Sinks are isolated — a misconfigured
+  shipper cannot take down a request handler.
+- 3b: RLS smoke test in CI. `supabase/tests/rls_smoke.sql` asserts
+  per-table policy behavior (DELETE/INSERT/UPDATE blocked for
+  members on the sensitive tables). `scripts/rls-test.sh` runs it
+  against a real Postgres instance when `SUPABASE_DB_URL` is set
+  as a repo secret.
+- 3c: backup + retention. `scripts/backup.sh` writes a
+  `pg_dump --format=custom` archive daily and prunes anything older
+  than 14 days. `docs/backup-and-retention.md` documents the
+  30-day off-host retention floor and the per-table data retention
+  rules.
+- 3d: offline regression harness. `tests/sw-offline.test.ts`
+  mirrors the SW routing rules from `public/sw.js` and asserts
+  that authenticated requests pass through, public pages cache,
+  report detail is stale-while-revalidated, the offline fallback
+  exists, and the manifest is well-formed. 12 cases.
+- 3e: CI matrix. `.github/workflows/ci.yml` now runs Node 20 and
+  Node 22 in parallel, uploads build artifacts, gates the RLS
+  smoke on `SUPABASE_DB_URL`, and adds a separate `security-headers`
+  job that boots a built app and curls the headers off `/login`.
+
+## Status
+- [x] 3a — `lib/log.ts` refactor: `LogSink` interface, `consoleSink` (default), `noopSink`, `memorySink`, `setSink/getSink/resetSink`. Public surface (`log.info`, `log.warn`, etc.) unchanged.
+- [x] 3a — `lib/log-sinks.ts`: `otlpHttpSink` (OTLP-shaped JSON POST) + `batchingSink` (timer-batched inner sink). Fire-and-forget, errors swallowed.
+- [x] 3a — `lib/log-bootstrap.ts`: env-driven sink selection (`LOG_SINK=console|otlp|noop`).
+- [x] 3a — `instrumentation.ts` calls `bootstrapLogSink()` on server start.
+- [x] 3a — `tests/log-sinks.test.ts`: 12 cases (sink swap, noop, error swallow, OTLP envelope, batching, bootstrap)
+- [x] 3b — `supabase/tests/rls_smoke.sql`: 9 blocks covering `block_completions`, `device_sessions`, `push_subscriptions`, `notification_preferences`, `user_weekly_commitments`, `leaderboard_projection`, `profiles` (role + cohort).
+- [x] 3b — `scripts/rls-test.sh`: runner; parses `RAISE NOTICE` lines and exits 0 only if every block ends in `_blocked=`.
+- [x] 3c — `scripts/backup.sh`: `pg_dump --format=custom --compress=6`, `pg_restore --list` verify, 14-day local retention.
+- [x] 3c — `docs/backup-and-retention.md`: cron entry, off-host retention, restore commands, per-table retention rules.
+- [x] 3d — `tests/sw-offline.test.ts`: 12 cases (SW routing + offline fallback + manifest). Constants in the test mirror `public/sw.js`; if either drifts, the tests catch it.
+- [x] 3e — `.github/workflows/ci.yml`: Node 20/22 matrix, build artifact upload, RLS smoke job (gated), security-headers job.
+
+Tests: 328/328 passing (was 304, +24: 12 log-sinks + 12 sw-offline).

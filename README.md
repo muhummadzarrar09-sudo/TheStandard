@@ -164,8 +164,17 @@ VAPID library bundle.
 - `tests/auth.test.ts` — email validation, device-id plausibility.
 - `tests/notifications.test.ts` — quiet hours, category gating.
 
-Run `npm test` in CI on Node 22. Add Playwright e2e tests before the
-paid cohort for the login → Today → team chat → reports flows.
+Run `npm test` in CI on Node 20 and Node 22 (matrix in
+`.github/workflows/ci.yml`). The RLS smoke test runs nightly against
+a real Postgres instance when `SUPABASE_DB_URL` is configured as a
+repo secret.
+
+## Scripts
+
+- `scripts/backup.sh` — daily `pg_dump` with custom format + 14-day
+  local retention. See `docs/backup-and-retention.md`.
+- `scripts/rls-test.sh` — runs the per-table RLS assertions in
+  `supabase/tests/rls_smoke.sql` and reports pass/fail per block.
 
 ## Deployment
 
