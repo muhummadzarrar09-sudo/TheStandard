@@ -1,1 +1,39 @@
-:root{--bg:#090a0b;--surface:#111415;--line:#29302f;--text:#eef2ed;--muted:#899390;--accent:#c7f36b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,sans-serif}a{color:inherit;text-decoration:none}.shell{display:flex;min-height:100vh}.rail{width:230px;border-right:1px solid var(--line);padding:28px 18px}.rail nav{display:grid;gap:5px;margin-top:60px}.rail nav a{padding:12px;color:var(--muted)}.rail nav a:hover,.rail nav a.active{background:#c7f36b12;color:var(--accent)}.brand{font-weight:800;letter-spacing:.16em}.brand small{display:block;color:var(--muted);font-size:9px;margin-top:5px}.main{max-width:1100px;width:100%;padding:54px 6%;margin:auto}.main:focus{outline:none}.eyebrow{color:var(--muted);font-size:10px;letter-spacing:.15em}.card{background:var(--surface);border:1px solid var(--line);padding:24px}.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:15px}.button{background:var(--accent);border:0;padding:12px 16px;color:#10140c;font-weight:700;cursor:pointer}.muted{color:var(--muted)}@media(max-width:700px){.rail{display:none}.main{padding:30px 20px}.grid{grid-template-columns:1fr}}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}:root[data-theme="linear"]{--bg:#0d0d0f;--surface:#151518;--line:#2b2b31;--accent:#8ab4ff}:root[data-theme="duolingo"]{--bg:#f4f7f4;--surface:#fff;--line:#d9e2dc;--text:#18231e;--muted:#63756c;--accent:#48b86a}:root[data-theme="robinhood"]{--bg:#f7f8f8;--surface:#fff;--line:#dfe6e2;--text:#13231b;--muted:#687871;--accent:#00a86b}:root[data-theme="arc"]{--bg:#17132a;--surface:#241d3d;--line:#443666;--text:#faf7ff;--muted:#aaa0c5;--accent:#ff8ebd}:root[data-theme="discord"]{--bg:#313338;--surface:#2b2d31;--line:#1e1f22;--text:#f2f3f5;--muted:#b5bac1;--accent:#5865f2}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}h1,h2,h3,p{max-width:70ch}.button{border-radius:4px}.card{border-radius:4px}button:disabled{opacity:.6;cursor:not-allowed}
+:root{--bg:#090a0b;--surface:#111415;--line:#29302f;--text:#eef2ed;--muted:#899390;--accent:#c7f36b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,sans-serif}a{color:inherit;text-decoration:none}.shell{display:flex;min-height:100vh}.rail{width:230px;border-right:1px solid var(--line);padding:28px 18px}.rail nav{display:grid;gap:5px;margin-top:60px}.rail nav a{padding:12px;color:var(--muted)}.rail nav a:hover,.rail nav a.active{background:#c7f36b12;color:var(--accent)}.brand{font-weight:800;letter-spacing:.16em}.brand small{display:block;color:var(--muted);font-size:9px;margin-top:5px}.main{max-width:1100px;width:100%;padding:54px 6%;margin:auto}.main:focus{outline:none}.eyebrow{color:var(--muted);font-size:10px;letter-spacing:.15em}.card{background:var(--surface);border:1px solid var(--line);padding:24px}.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:15px}.button{background:var(--accent);border:0;padding:12px 16px;color:#10140c;font-weight:700;cursor:pointer}.muted{color:var(--muted)}@media(max-width:700px){.rail{display:none}.main{padding:30px 20px}.grid{grid-template-columns:1fr}}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}:root[data-theme="linear"]{--bg:#0d0d0f;--surface:#151518;text:#f5f5f5;--line:#2b2b31;--accent:#8ab4ff}:root[data-theme="duolingo"]{--bg:#f4f7f4;--surface:#fff;--line:#d9e2dc;--text:#18231e;--muted:#63756c;--accent:#48b86a}:root[data-theme="robinhood"]{--bg:#f7f8f8;--surface:#ffffff;--line:#dfe6e2;--text:#13231b;--muted:#687871;--accent:#00a86b}:root[data-theme="arc"]{--bg:#17132a;--surface:#241d3d;--line:#443666;--text:#faf7ff;--muted:#aaa0c5;--accent:#ff8ebd}:root[data-theme="discord"]{--bg:#313338;--surface:#2b2d31;--text:#f2f3f5;--muted:#b5bac1;--accent:#5865f2}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}h1,h2,h3,p{max-width:70ch}.button{border-radius:4px}.card{border-radius:4px}button:disabled{opacity:.6;cursor:not-allowed}
+
+/* ----------------------------------------------------------------------
+ * Reusable utility classes (extracted from inline styles).
+ * The codebase still uses inline styles for the layout primitives
+ * (margin, padding, grid, flex) because the original brand spec was
+ * authored as 100+ pages of one-offs. The classes below cover the
+ * patterns that appeared 10+ times across the codebase so the
+ * recurring cases stay in one place. New pages can use either inline
+ * styles or these classes; the goal is *consistency*, not a refactor
+ * of the existing pages.
+ * ---------------------------------------------------------------------- */
+
+/* The "row + stretched checkbox + label" pattern used in the
+ * DailyCheckin, WeeklyCommitment, and MilestoneList components. */
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
+
+/* The "list item with a status badge" pattern used in the Devices,
+ * Members, and Reports admin pages. */
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:17px 0;border-bottom:1px solid var(--line)}
+
+/* The "narrow form field" pattern used in the login, verify, and
+ * admin forms. */
+.input{padding:12px;background:var(--bg);border:1px solid var(--line);color:var(--text);width:100%}
+
+/* The "tertiary text button" pattern (Resend code, Load older, etc.). */
+.link-button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12}
+
+/* The "danger link button" pattern (retry on failed chat sends). */
+.link-button-danger{background:none;border:0;color:#ff8b82;cursor:pointer;padding:0;font-size:11}
+
+/* The "page footer" pattern (the DISCIPLINE brand mark on the
+ * landing page). */
+.page-footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--line)}
+
+/* The "status message" pattern (Saving / Saved / Error). */
+.status-msg{margin-top:8px;font-size:12}
+.status-msg.ok{color:var(--accent)}
+.status-msg.err{color:#ff8b82}

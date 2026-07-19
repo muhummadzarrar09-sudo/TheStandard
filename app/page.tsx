@@ -25,6 +25,14 @@ export default function Landing() {
           <li>{t('app.howItWorks4')}</li>
         </ol>
       </section>
+      <footer style={{ marginTop: 60, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
+        <p className="muted" style={{ fontSize: 11, letterSpacing: '.15em' }}>
+          {t('app.brand')} · {t('app.brandSub')}
+        </p>
+        <p className="muted" style={{ fontSize: 11, marginTop: 6 }}>
+          A private, paid cohort. New members are provisioned by the cohort lead.
+        </p>
+      </footer>
     </main>
   )
 }
