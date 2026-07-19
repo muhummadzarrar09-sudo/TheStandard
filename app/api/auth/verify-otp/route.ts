@@ -23,6 +23,7 @@ import { badRequest, toResponse } from '../../../../lib/api-errors'
 import { rateLimit } from '../../../../lib/rate-limit'
 import { normalizeEmail } from '../../../../lib/auth'
 import { verifyOtpToken, isOtpNonceUsed, recordOtpNonce } from '../../../../lib/otp-token'
+import { checkLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../../../../lib/otp-lockout'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,6 +79,17 @@ const handler = withErrorHandling(
         { auth: { persistSession: false, autoRefreshToken: false } }
       )
 
+      // Per-email lockout (PRD §8.1: 5 failed attempts, 10-min
+      // lockout). Check before the credential comparison so a
+      // brute-forcer doesn't get to keep guessing.
+      const lock = checkLockout(email)
+      if (!lock.allowed) {
+        return new Response(JSON.stringify({ ok: false, error: 'locked' }), {
+          status: 429,
+          headers: { 'content-type': 'application/json', 'retry-after': String(lock.retryAfterSeconds) }
+        })
+      }
+
       // Use the magic link / OTP type that matches what the login
       // page would have requested.
       const { data, error } = await admin.auth.verifyOtp({
@@ -86,8 +98,20 @@ const handler = withErrorHandling(
         type: 'email'
       })
       if (error || !data?.session) {
+        // Charge the bucket with a failed attempt. The
+        // next call within the lockout window will 429.
+        const next = recordFailedAttempt(email)
+        if (!next.allowed) {
+          return new Response(JSON.stringify({ ok: false, error: 'locked' }), {
+            status: 429,
+            headers: { 'content-type': 'application/json', 'retry-after': String(next.retryAfterSeconds) }
+          })
+        }
         return NextResponse.json({ ok: false, error: 'invalid_code' }, { status: 401 })
       }
+
+      // Success: clear the bucket.
+      recordSuccessfulAttempt(email)
 
       // We have a session. Now we need to write the auth cookies so the
       // user's subsequent requests are authenticated. We do this by

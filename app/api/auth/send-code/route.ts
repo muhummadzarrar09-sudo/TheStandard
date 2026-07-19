@@ -24,6 +24,7 @@ import { badRequest, toResponse } from '../../../../lib/api-errors'
 import { rateLimit } from '../../../../lib/rate-limit'
 import { normalizeEmail } from '../../../../lib/auth'
 import { verifyOtpToken, isOtpNonceUsed } from '../../../../lib/otp-token'
+import { checkAndRecordResend } from '../../../../lib/otp-cooldown'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +51,17 @@ const handler = withErrorHandling(
       const token = typeof body?.token === 'string' ? body.token : ''
       if (!email || !token) {
         return NextResponse.json({ ok: false, error: 'invalid_input' }, { status: 400 })
+      }
+
+      // Resend cooldown: PRD §8.1 says "resend cooldown" so a
+      // user can't flood the email provider. Refuse the resend
+      // and tell the client how long to wait.
+      const cooldown = checkAndRecordResend(email)
+      if (!cooldown.allowed) {
+        return new Response(JSON.stringify({ ok: false, error: 'cooldown', retryAfterSeconds: cooldown.retryAfterSeconds }), {
+          status: 429,
+          headers: { 'content-type': 'application/json', 'retry-after': String(cooldown.retryAfterSeconds) }
+        })
       }
 
       const payload = verifyOtpToken(token)
