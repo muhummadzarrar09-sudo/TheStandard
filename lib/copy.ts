@@ -55,6 +55,20 @@ export type CopyKey =
   | 'tracker.bestStreak'
   | 'tracker.weeklyReview'
   | 'tracker.daysOf'
+  | 'leaderboard.heading'
+  | 'leaderboard.subtitle'
+  | 'leaderboard.viewAll'
+  | 'leaderboard.viewTeam'
+  | 'leaderboard.viewWeek'
+  | 'leaderboard.colRank'
+  | 'leaderboard.colMember'
+  | 'leaderboard.colStreak'
+  | 'leaderboard.colDays'
+  | 'leaderboard.colComplete'
+  | 'leaderboard.colWeek'
+  | 'leaderboard.empty'
+  | 'leaderboard.unavailable'
+  | 'leaderboard.tieExplanation'
   | 'team.heading'
   | 'team.emptyTitle'
   | 'team.emptyDetail'
@@ -164,6 +178,20 @@ const en: Record<CopyKey, string> = {
   'tracker.bestStreak': 'BEST STREAK',
   'tracker.weeklyReview': 'WEEKLY REVIEW',
   'tracker.daysOf': '{done} of 30 days complete. Review the pattern, then choose the next standard.',
+  'leaderboard.heading': 'Keep the line.',
+  'leaderboard.subtitle': 'Ranked by current streak, completion percentage, completed days, then join time. Your private reflections never appear here.',
+  'leaderboard.viewAll': 'All members',
+  'leaderboard.viewTeam': 'My team',
+  'leaderboard.viewWeek': 'This week',
+  'leaderboard.colRank': 'RANK',
+  'leaderboard.colMember': 'MEMBER',
+  'leaderboard.colStreak': 'STREAK',
+  'leaderboard.colDays': 'DAYS',
+  'leaderboard.colComplete': 'COMPLETE',
+  'leaderboard.colWeek': 'WEEK',
+  'leaderboard.empty': 'No leaderboard data yet. The first completed day will appear here.',
+  'leaderboard.unavailable': 'Leaderboard temporarily unavailable. Try again in a moment.',
+  'leaderboard.tieExplanation': 'Tie-breakers (in order): current streak, completion percentage, completed days, join time. This week view also ranks by check-ins in the last 7 days.',
   'team.heading': 'Build together.',
   'team.emptyTitle': 'Your team is being assembled.',
   'team.emptyDetail': "The team room opens once the cohort lead finalizes team assignments. You'll see your team, its idea, and the team's execution chat here.",
