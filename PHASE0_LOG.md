@@ -411,3 +411,106 @@ Scope:
   status enum.
 
 Tests: 353/353 passing (was 328, +25).
+
+---
+
+# Phase 5 — Leftovers from the client-ready audit
+
+A long-horizon batch covering the items the Phase 4 pass left open
+(some real, some polish) plus a few operational pieces for prod.
+Five sub-batches, one commit each.
+
+Scope:
+- 5a — Security/correctness: VAPID env rename, OTP secret
+  fail-loud, chat race fix, supabase-js imports cleaned up.
+- 5b — i18n round 2: 34 new copy keys for public pages + chat;
+  theme single source of truth.
+- 5c — Code quality: semantic HTML, cn() helper, SQL test for
+  the team_milestones_guard trigger.
+- 5d — Operational: Playwright config + smoke e2e, observability
+  and threat-model docs, S3 backup shipper.
+- 5e — Cosmetic: admin 401 page, landing footer, CSS class
+  extraction.
+
+## Status
+
+### 5a — security / correctness
+- [x] `.env.example`: `VAPID_PUBLIC_KEY` -> `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+  (the PushSubscription component reads the NEXT_PUBLIC_ name; the
+  example had the unprefixed one, so push silently failed at
+  runtime).
+- [x] `lib/otp-token.ts`: secret resolution moved from module load
+  to per-call. Falls back to a recognisable dev-only string + loud
+  warning if neither `OTP_TOKEN_SECRET` nor
+  `SUPABASE_SERVICE_ROLE_KEY` is set. 4 new tests for resolution.
+- [x] `lib/team-chat-reconcile.ts` + `components/team/TeamChat.tsx`:
+  the optimistic + realtime + ack state machine is now a pure
+  reducer. Fixes the duplicate-message race when a fast-replaying
+  user sends two messages in <50ms. 10 new tests.
+- [x] `app/api/auth/{send-code,verify-otp}/route.ts`: replaced
+  dynamic `await import('@supabase/supabase-js')` with a static
+  top-level import. Comment explains why supabase-js and not ssr.
+- [x] `app/api/profile` GET: existing .select() whitelist now has
+  a comment explaining the security contract.
+
+### 5b — i18n round 2 + theme single source of truth
+- [x] `lib/copy.ts`: 34 new keys. Every user-visible string in the
+  app routes through `t()`.
+- [x] `app/(public)/login/page.tsx` + `verify/page.tsx`,
+  `app/page.tsx`, `app/not-found.tsx`, `app/loading.tsx`,
+  `app/(app)/team/chat/page.tsx`, `components/team/TeamChat.tsx`:
+  hardcoded copy routed through `t()`. Tests added that round-trip
+  every key and assert none are missing.
+- [x] `themes/index.ts`: `presets` and `isPreset` now live here,
+  derived from the `themes` object. `themes/theme-provider.tsx`
+  re-exports.
+- [x] `app/layout.tsx`: FOUC bootstrap's allowed list is now built
+  at module-load from the same `presets` array, so the two cannot
+  drift.
+- [x] `tests/themes.test.ts`: 3 new cases for the alignment
+  between `themes[]` and `presets[]`.
+
+### 5c — code quality
+- [x] `components/tracker/ProgressHistory.tsx`: legend's color
+  swatch `<i>` -> `<span aria-hidden="true">` (semantic HTML).
+- [x] `lib/cn.ts` + `tests/cn.test.ts`: tiny classname joiner
+  (6 tests).
+- [x] `supabase/tests/team_milestones_guard.sql`: dedicated RLS
+  test for the migration 011 trigger. 6 blocks (title, team_id,
+  owner, due_at, delete — all should be blocked; status — should
+  succeed).
+- [x] `scripts/rls-test.sh`: now discovers every `*.sql` in
+  `supabase/tests/` (except the manual checklist). Pattern tweak:
+  blocks ending in `_succeeded=` (with =) are expected successes;
+  blocks ending in `_succeeded` (without =) are unexpected and
+  fail the build.
+
+### 5d — operational
+- [x] `playwright.config.ts` + `e2e/smoke.e2e.ts`: Playwright
+  config with two projects. The 'smoke' project hits public
+  routes + the new auth endpoint + /api/health with no real
+  Supabase. 6 smoke tests. Files use `.e2e.ts` extension so
+  vitest (default `*.spec.ts`) does not pick them up.
+- [x] `docs/observability.md`: aggregator wiring recipes for
+  Datadog, Honeycomb, Sentry. Shows the env shape and the
+  request-correlation pattern. Includes a composite-sink snippet
+  for dual-piping.
+- [x] `docs/threat-model.md`: explicit list of what we defend
+  against and what we knowingly do not, with "when this stops
+  being true" triggers for each exception.
+- [x] `scripts/backup-ship.sh`: ships the latest dump to S3 with a
+  date-folder key layout. Verifies the dump with `pg_restore
+  --list` before shipping.
+
+### 5e — cosmetic
+- [x] `app/admin/not-authorized/page.tsx`: 401 page shown to
+  signed-in members who try to visit /admin/*. Layout updated to
+  redirect here instead of /dashboard.
+- [x] `app/page.tsx` (landing): brand footer added.
+- [x] `app/globals.css`: 7 recurring inline-style patterns
+  extracted to utility classes. Also fixed a pre-existing typo
+  in the discord theme block (`--muted:#muted;#b5bac1;` ->
+  `--muted:#b5bac1;`).
+
+Tests: 377/377 passing (was 353, +24: 4 otp-secret + 10 chat-
+reconcile + 3 themes + 1 copy + 6 cn).
