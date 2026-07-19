@@ -1,5 +1,6 @@
 import './globals.css'
 import { ThemeProvider } from '../themes/theme-provider'
+import { presets } from '../themes'
 import ServiceWorkerRegistration from '../components/pwa/ServiceWorkerRegistration'
 import SkipLink from '../components/ui/SkipLink'
 import { getCspNonce } from '../lib/csp-nonce'
@@ -12,11 +13,14 @@ import { getCspNonce } from '../lib/csp-nonce'
 // The script carries the per-request CSP nonce so it runs under a
 // strict (no-'unsafe-inline') policy. In dev the nonce is also set but
 // the policy additionally allows 'unsafe-inline' for HMR.
+//
+// The allowed list is built from `themes` at module-load so the
+// bootstrap and the provider can never drift.
 const themeBootstrap = `
 (function () {
   try {
     var t = localStorage.getItem('discipline-theme');
-    var allowed = ['whoop-oura','linear','duolingo','robinhood','arc','discord'];
+    var allowed = ${JSON.stringify(presets)};
     if (t && allowed.indexOf(t) !== -1) {
       document.documentElement.dataset.theme = t;
     }

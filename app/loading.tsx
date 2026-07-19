@@ -1,14 +1,13 @@
 export const metadata = { title: 'Loading… — Discipline OS' }
 
-// Top-level loading state. Renders while a slow server component is
-// being resolved (e.g. on first visit to /). The (app) group has its
-// own loading.tsx for authenticated navigation.
+import { t } from '../lib/copy'
+
 export default function Loading() {
   return (
     <main className="main" id="main" tabIndex={-1} aria-busy="true">
-      <p className="eyebrow">DISCIPLINE OS</p>
-      <h1>Preparing your day…</h1>
-      <p className="muted">Loading the standard and checking your local time.</p>
+      <p className="eyebrow">{t('loading.eyebrow')}</p>
+      <h1>{t('loading.title')}</h1>
+      <p className="muted">{t('loading.body')}</p>
     </main>
   )
 }

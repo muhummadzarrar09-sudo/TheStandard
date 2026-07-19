@@ -38,14 +38,14 @@ export default async function Chat() {
   if (!team) {
     return (
       <AppShell items={RAIL}>
-        <Link href="/team" className="muted">← Team room</Link>
-        <p className="eyebrow" style={{ marginTop: 30 }}>PRIVATE TEAM CHAT</p>
+        <Link href="/team" className="muted">← {t('team.heading')}</Link>
+        <p className="eyebrow" style={{ marginTop: 30 }}>{t('team.chatEyebrow')}</p>
         <h1>{t('chat.heading')}</h1>
-        <p className="muted">No team assigned yet.</p>
+        <p className="muted">{t('team.chatNotAssigned')}</p>
         <EmptyState
-          eyebrow="PENDING"
-          title="Team chat opens with your team assignment."
-          body="Once the cohort lead assigns your team, this page becomes your private execution room."
+          eyebrow={t('team.chatPendingEyebrow')}
+          title={t('team.chatPendingTitle')}
+          body={t('team.chatPendingBody')}
         />
       </AppShell>
     )

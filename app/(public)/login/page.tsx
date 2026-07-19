@@ -15,10 +15,6 @@ export default function Login() {
     setBusy(true)
     const normalized = email.trim().toLowerCase()
     try {
-      // 1. Request a one-time, email-bound token from our server. The
-      // server checks enrollment + access window; the response is
-      // always { ok: true } for any well-formed email so an attacker
-      // cannot enumerate who is enrolled.
       const gate = await fetch('/api/auth/request-otp', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -26,17 +22,7 @@ export default function Login() {
       })
       if (!gate.ok) throw new Error('gate')
       const { token } = await gate.json()
-      if (!token) {
-        // Either the email is unknown or the access window is closed.
-        // Surface the same generic error to the user so the gate is
-        // indistinguishable from a "happy path" failure.
-        throw new Error('not_eligible')
-      }
-      // 2. The server is going to send the OTP email via Supabase.
-      // We trigger that by asking the server to issue the OTP code
-      // (the token is the gate; the code is sent through Supabase
-      // auth's OTP infrastructure so the email format matches the
-      // rest of the app).
+      if (!token) throw new Error('not_eligible')
       const otp = await fetch('/api/auth/send-code', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -46,13 +32,8 @@ export default function Login() {
       sessionStorage.setItem('discipline-login-email', normalized)
       sessionStorage.setItem('discipline-login-token', token)
       router.push('/verify')
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : ''
-      if (msg === 'not_eligible') {
-        setError(t('login.error'))
-      } else {
-        setError(t('login.error'))
-      }
+    } catch {
+      setError(t('login.error'))
     } finally {
       setBusy(false)
     }
@@ -61,7 +42,7 @@ export default function Login() {
   return (
     <main className="main" id="main" tabIndex={-1}>
       <div className="card">
-        <p className="eyebrow">MEMBER ACCESS</p>
+        <p className="eyebrow">{t('public.memberAccess')}</p>
         <h1>{t('login.heading')}</h1>
         <p className="muted">{t('login.subtitle')}</p>
         <form onSubmit={submit} noValidate>

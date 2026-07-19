@@ -26,8 +26,6 @@ export default function Verify() {
       return
     }
     if (!token) {
-      // The user landed here without a token (e.g. they refreshed
-      // the page and sessionStorage was empty). Send them back.
       router.replace('/login')
       return
     }
@@ -43,9 +41,6 @@ export default function Verify() {
         setError(t('verify.error'))
         return
       }
-      // The server has now set the Supabase auth cookies on the
-      // response. A hard navigation (not router.push) ensures the
-      // new cookies are picked up on the next request.
       sessionStorage.removeItem('discipline-login-email')
       sessionStorage.removeItem('discipline-login-token')
       window.location.href = '/dashboard'
@@ -85,7 +80,7 @@ export default function Verify() {
   return (
     <main className="main" id="main" tabIndex={-1}>
       <div className="card">
-        <p className="eyebrow">VERIFY EMAIL</p>
+        <p className="eyebrow">{t('public.verifyEmail')}</p>
         <h1>{t('verify.heading')}</h1>
         <p className="muted">
           {t('verify.subtitle', 'en', { email: email || 'your email' })}
@@ -108,6 +103,7 @@ export default function Verify() {
             onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
             placeholder="000000"
             aria-describedby={error ? 'verify-error' : info ? 'verify-info' : undefined}
+            aria-label={t('verify.codeInputAria')}
             aria-invalid={error ? true : undefined}
             style={{
               padding: 14,

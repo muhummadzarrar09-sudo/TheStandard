@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type { FormEvent } from 'react'
 import { createSupabaseBrowser } from '../../lib/supabase/browser'
 import { reconcile, type ChatMessage } from '../../lib/team-chat-reconcile'
+import { t } from '../../lib/copy'
 
 const PAGE_SIZE = 50
 const MAX_BODY = 2000
@@ -23,8 +24,6 @@ export default function TeamChat({ teamId }: { teamId: string }) {
   const stickToBottomRef = useRef(true)
   const client = createSupabaseBrowser()
 
-  // Wrapper so the component's setMessages signature stays the same
-  // and the reducer stays a pure function (testable in isolation).
   const dispatch = useCallback((event: Parameters<typeof reconcile>[1]) => {
     setMessages(prev => reconcile(prev, event))
   }, [])
@@ -48,7 +47,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
       if (!active) return
       if (error) {
         setStatus('offline')
-        setErrorMsg('Could not load messages.')
+        setErrorMsg(t('chat.errorSendFailed'))
         return
       }
       const list = (data || []).slice().reverse().map(m => ({ ...m, delivery: 'sent' as const }))
@@ -131,7 +130,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
     setErrorMsg(null)
     const userId = userIdRef.current
     if (!userId) {
-      setErrorMsg('You must be signed in to send a message.')
+      setErrorMsg(t('chat.errorNotSignedIn'))
       return
     }
     const clientMessageId = crypto.randomUUID()
@@ -159,7 +158,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
         .single()
       if (error) {
         dispatch({ type: 'fail', id: optimistic.id })
-        setErrorMsg('Could not send. Tap retry.')
+        setErrorMsg(t('chat.errorSendFailed'))
         return
       }
       if (data) {
@@ -167,7 +166,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
       }
     } catch {
       dispatch({ type: 'fail', id: optimistic.id })
-      setErrorMsg('Could not send. Tap retry.')
+      setErrorMsg(t('chat.errorSendFailed'))
     } finally {
       setSendBusy(false)
     }
@@ -175,8 +174,6 @@ export default function TeamChat({ teamId }: { teamId: string }) {
 
   function retry(msg: ChatMessage) {
     setInput(msg.body)
-    // Remove the failed optimistic so the next send doesn't
-    // collide with a stale id.
     setMessages(prev => prev.filter(m => m.id !== msg.id))
   }
 
@@ -190,14 +187,14 @@ export default function TeamChat({ teamId }: { teamId: string }) {
           role="status"
           aria-live="polite"
         >
-          ● {status === 'live' ? 'Live' : status === 'connecting' ? 'Connecting…' : 'Offline'}
+          ● {status === 'live' ? t('chat.connected') : status === 'connecting' ? t('chat.connecting') : t('chat.offline')}
         </span>
       </div>
       <div
         ref={scrollerRef}
         onScroll={onScroll}
         role="log"
-        aria-label="Team chat messages"
+        aria-label={t('chat.heading')}
         aria-live="polite"
         style={{ minHeight: 250, maxHeight: 400, overflowY: 'auto', padding: '12px 0' }}
       >
@@ -207,24 +204,25 @@ export default function TeamChat({ teamId }: { teamId: string }) {
               type="button"
               onClick={loadOlder}
               disabled={loadingMore}
-              aria-label="Load older messages"
+              aria-label={t('chat.loadOlder')}
               style={{ background: 'none', border: 0, cursor: 'pointer', color: 'var(--accent)', fontSize: 12 }}
             >
-              {loadingMore ? 'Loading…' : 'Load older messages'}
+              {loadingMore ? t('chat.loadingMore') : t('chat.loadOlder')}
             </button>
           </div>
         )}
         {messages.length === 0 && (
           <p className="muted" style={{ padding: 20, textAlign: 'center' }}>
-            No messages yet. Be the first to start the room.
+            {t('chat.empty')}
           </p>
         )}
         {messages.map(m => {
           const isOwn = m.author_id === userIdRef.current
+          const time = new Date(m.created_at).toLocaleTimeString()
           return (
             <div
               key={m.id}
-              aria-label={`${isOwn ? 'You' : 'Teammate'} at ${new Date(m.created_at).toLocaleTimeString()}`}
+              aria-label={isOwn ? t('chat.ariaYouAt', 'en', { time }) : t('chat.ariaTeammateAt', 'en', { time })}
               style={{
                 padding: 12,
                 background: isOwn ? 'var(--accent)12' : 'var(--bg)',
@@ -236,15 +234,15 @@ export default function TeamChat({ teamId }: { teamId: string }) {
             >
               <p style={{ margin: 0 }}>{m.body}</p>
               <small className="muted" style={{ display: 'block', marginTop: 4, fontSize: 11 }}>
-                {new Date(m.created_at).toLocaleTimeString()}
-                {m.delivery === 'sending' && <span aria-live="polite"> · sending…</span>}
+                {time}
+                {m.delivery === 'sending' && <span aria-live="polite"> · {t('chat.sending')}</span>}
                 {m.delivery === 'failed' && (
                   <>
                     {' · '}
                     <button
                       type="button"
                       onClick={() => retry(m)}
-                      aria-label={`Retry: ${m.body}`}
+                      aria-label={`${t('chat.retryAria')}: ${m.body}`}
                       style={{
                         background: 'none',
                         border: 0,
@@ -254,7 +252,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
                         fontSize: 11
                       }}
                     >
-                      failed · tap to retry
+                      {t('chat.failed')}
                     </button>
                   </>
                 )}
@@ -264,23 +262,23 @@ export default function TeamChat({ teamId }: { teamId: string }) {
         })}
       </div>
       <form onSubmit={send} style={{ display: 'flex', gap: 8 }}>
-        <label htmlFor="chat-input" className="visually-hidden">Send a message to your team</label>
+        <label htmlFor="chat-input" className="visually-hidden">{t('chat.inputPlaceholder')}</label>
         <input
           id="chat-input"
           value={input}
           onChange={e => setInput(e.target.value)}
           maxLength={MAX_BODY}
-          placeholder="Message your team…"
-          aria-label="Message your team"
+          placeholder={t('chat.inputPlaceholder')}
+          aria-label={t('chat.inputLabel')}
           style={{ flex: 1, padding: 12, background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--text)' }}
         />
         <button
           className="button"
           type="submit"
           disabled={!input.trim() || sendBusy}
-          aria-label="Send message"
+          aria-label={t('chat.sendLabel')}
         >
-          Send →
+          {t('chat.send')}
         </button>
       </form>
       {errorMsg && (

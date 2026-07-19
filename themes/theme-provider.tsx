@@ -1,9 +1,10 @@
 'use client'
 
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { presets, isPreset, type Preset } from './index'
 
-export const presets = ['whoop-oura', 'linear', 'duolingo', 'robinhood', 'arc', 'discord'] as const
-export type Preset = typeof presets[number]
+export { presets, isPreset }
+export type { Preset }
 
 type ThemeContextValue = {
   preset: Preset
