@@ -49,7 +49,7 @@ export default function TodayBlocks({ initialDone = [], schedule }: Props) {
     }
   }
 
-  const completed = new Set(done)
+  const completed = new Set<string>(done)
   return (
     <section className="card" style={{ marginTop: 15 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>

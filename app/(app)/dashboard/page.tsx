@@ -12,19 +12,9 @@ import DailyCheckin from '../../../components/tracker/DailyCheckin'
 import WeeklyCommitment from '../../../components/tracker/WeeklyCommitment'
 import { t } from '../../../lib/copy'
 import { getScheduleForCohort } from '../../../lib/schedule-source'
+import { MEMBER_RAIL } from '../../../lib/nav'
 
 export const dynamic = 'force-dynamic'
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/schedule', key: 'rail.schedule' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/team/chat', key: 'rail.teamChat' as const },
-  { href: '/leaderboard', key: 'rail.leaderboard' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const }
-]
 
 export default async function Dashboard() {
   const db = await createSupabaseServer()
@@ -65,7 +55,11 @@ export default async function Dashboard() {
     .select('block_key')
     .eq('user_id', user.id)
     .eq('local_date', today)
-  const doneKeys = new Set((completions || []).map(c => c.block_key))
+  const doneKeys = new Set<string>(
+    (completions || [])
+      .map((c: { block_key: unknown }) => c.block_key)
+      .filter((k): k is string => typeof k === 'string')
+  )
   const requiredTotal = schedule.filter(b => b.required).length
   const criticalTotal = schedule.filter(b => b.critical).length
   const requiredDone = schedule.filter(b => b.required && doneKeys.has(b.key)).length
@@ -105,7 +99,7 @@ export default async function Dashboard() {
     schedule.filter(b => b.required).find(b => !doneKeys.has(b.key))
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={MEMBER_RAIL}>
       <p className="eyebrow">
         {cohortName.toUpperCase()} · {t('today.dayLabel', 'en', { day: String(cohortDay).padStart(2, '0') })}
       </p>
@@ -124,7 +118,7 @@ export default async function Dashboard() {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label={`${pct}% complete`}
-            style={{ height: 4, background: '#29302f' }}
+            style={{ height: 4, background: 'var(--line)' }}
           >
             <i
               style={{
@@ -160,7 +154,7 @@ export default async function Dashboard() {
           )}
         </section>
       </div>
-      <TodayBlocks initialDone={Array.from(doneKeys)} schedule={schedule} />
+      <TodayBlocks initialDone={Array.from(doneKeys) as string[]} schedule={schedule} />
       <WeeklyCommitment />
       <DailyCheckin />
     </AppShell>

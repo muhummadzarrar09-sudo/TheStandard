@@ -178,18 +178,11 @@ export default function Verify() {
                 aria-describedby={error ? 'verify-error' : info ? 'verify-info' : undefined}
                 aria-label={t('verify.codeInputAria')}
                 aria-invalid={error ? true : undefined}
-                style={{
-                  padding: 14,
-                  width: '100%',
-                  margin: '8px 0 16px',
-                  background: '#090a0b',
-                  border: '1px solid #29302f',
-                  color: 'white',
-                  letterSpacing: '.5em'
-                }}
+                className="input"
+                style={{ letterSpacing: '.5em' }}
               />
               {error && (
-                <p id="verify-error" role="alert" style={{ color: '#ff8b82' }}>
+                <p id="verify-error" role="alert" style={{ color: 'var(--danger)' }}>
                   {error}
                 </p>
               )}

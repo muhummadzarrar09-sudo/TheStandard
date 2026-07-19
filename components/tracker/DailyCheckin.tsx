@@ -88,14 +88,8 @@ export default function DailyCheckin() {
             maxLength={5000}
             placeholder="What did you execute? What changes tomorrow?"
             aria-describedby="reflection-help reflection-counter"
-            style={{
-              width: '100%',
-              minHeight: 110,
-              padding: 12,
-              background: 'var(--bg)',
-              border: '1px solid var(--line)',
-              color: 'var(--text)'
-            }}
+            className="input"
+            style={{ minHeight: 110, font: 'inherit' }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             <small id="reflection-help" className="muted">Private reflection · <span id="reflection-counter">{reflection.length}/5000</span></small>
@@ -115,7 +109,7 @@ export default function DailyCheckin() {
               className="muted"
               style={{
                 marginTop: 8,
-                color: state === 'error' ? '#ff8b82' : 'var(--accent)',
+                color: state === 'error' ? 'var(--danger)' : 'var(--accent)',
                 fontSize: 12
               }}
             >

@@ -2,17 +2,7 @@ import { createSupabaseServer } from '../../../lib/supabase/server'
 import { redirect } from 'next/navigation'
 import AppShell from '../../../components/ui/AppShell'
 import { getScheduleForCohort, getScheduleConfigForCohort } from '../../../lib/schedule-source'
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/schedule', key: 'rail.schedule' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/team/chat', key: 'rail.teamChat' as const },
-  { href: '/leaderboard', key: 'rail.leaderboard' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const }
-]
+import { MEMBER_RAIL } from '../../../lib/nav'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +24,7 @@ export default async function Schedule() {
   ])
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={MEMBER_RAIL}>
       <p className="eyebrow">SCHEDULE ENGINE · LOCAL TIME</p>
       <h1>Today's structure.</h1>
       <p className="muted">
@@ -74,7 +64,7 @@ export default async function Schedule() {
                 <span
                   style={{
                     background: 'var(--accent)',
-                    color: '#10140c',
+                    color: 'var(--accent-text)',
                     padding: '3px 8px',
                     fontSize: 10,
                     letterSpacing: '.1em',

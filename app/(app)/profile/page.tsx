@@ -3,17 +3,9 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '../../../lib/supabase/server'
 import { localDateInTimezone } from '../../../lib/domain'
 import AppShell from '../../../components/ui/AppShell'
+import { PROFILE_RAIL } from '../../../lib/nav'
 
 export const dynamic = 'force-dynamic'
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const },
-  { href: '/profile', key: 'rail.profile' as const }
-]
 
 export default async function Profile() {
   const db = await createSupabaseServer()
@@ -39,7 +31,7 @@ export default async function Profile() {
     : 30
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={PROFILE_RAIL}>
       <p className="eyebrow">ACCOUNT · PROFILE</p>
       <h1>Your member profile.</h1>
 

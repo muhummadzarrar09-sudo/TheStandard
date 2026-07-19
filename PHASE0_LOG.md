@@ -632,6 +632,101 @@ progress-validation + 8 device-id + 10 otp-lockout).
 
 ---
 
+# Phase 7 — Real bugs + theme rot (client polish)
+
+A second-pass code review found ~12 issues that the prior phases
+missed — a build-breaking import, type holes, raw hex colors
+sprinkled across the UI that defeat the entire 6d preset system,
+and the long-known "PRIVATE EXECUTION ROOM" hardcoded eyebrow
+that was supposed to land in 5b but didn't.
+
+Scope (one commit):
+- 7a — Build/type/runtime bugs (4 fixes)
+- 7b — Theme-system rot: 7+ components had hardcoded `'#ff8b82'`
+  / `'#10140c'` / `'#090a0b'` hex literals that completely
+  defeat the 6d preset system. Added `--danger` and `--accent-text`
+  tokens. Every preset overrides the full set.
+- 7c — DRY: 13 files redefined the same `RAIL` array. Extracted
+  to `lib/nav.ts` (MEMBER_RAIL / COMMUNITY_RAIL / PROFILE_RAIL
+  / ADMIN_RAIL).
+- 7d — Polish: missing-unit `font-size: 12` in CSS, raw enum
+  category labels in the progress log, inline `style` blocks
+  replaced with the existing `.input` utility class.
+
+## Status
+- [x] 7a — `lib/api-errors.ts`: `buildBody` was unexported but
+  `lib/api-handler.ts` imported it; `app/api/log/route.ts`
+  imported `withErrorHandling` from `api-errors` (it's in
+  `api-handler`). **Build was broken.** Re-exported `buildBody`;
+  fixed the import.
+- [x] 7a — `app/api/leaderboard/route.ts`: `error` was
+  destructured twice in the same scope. Renamed the second to
+  `lbError`.
+- [x] 7a — `tsconfig.json`: bumped `target` and `lib` from
+  ES2017 to ES2020 so the `1000000n` BigInt literal in
+  `log-sinks.ts` is valid syntax (was a TS2737 error).
+- [x] 7a — `app/(app)/dashboard/page.tsx`: `Set<unknown>` /
+  `unknown[]` type holes when block_key came back from Supabase.
+  `components/schedule/TodayBlocks.tsx`: same `Set<unknown>`
+  hole. Both now explicitly coerce to `Set<string>` / `string[]`.
+- [x] 7b — `app/globals.css`: added `--accent-text` and
+  `--danger` to the base `:root` and to every preset block.
+  `.button` now uses `color: var(--accent-text)` (was
+  hardcoded `#10140c`, which broke the duolingo + arc +
+  robinhood + discord presets). `.link-button-danger` and
+  `.status-msg.err` use `var(--danger)`.
+- [x] 7b — 12 components swept for the hex literals: dashboard,
+  schedule, login, verify, settings, settings/devices,
+  admin/{analytics,enrollment,members,reports},
+  components/{admin/AdminForms, auth/DeviceRevokePicker,
+  schedule/TodayBlocks (already themed), team/{MilestoneList,
+  TeamChat, TeamProgressLog}, tracker/{DailyCheckin,
+  WeeklyCommitment}}. Every `'#ff8b82'` and `'#10140c'` is
+  now `var(--danger)` / `var(--accent-text)`. Every `'#090a0b'`
+  and `'white'` input was replaced with the existing `.input`
+  class.
+- [x] 7b — `components/team/TeamChat.tsx`: the invalid
+  `var(--accent)12` color (no such alpha channel) is now a
+  real `color-mix(in srgb, var(--accent) 12%, var(--bg))`.
+- [x] 7c — `lib/nav.ts`: 4 typed rails exported.
+  11 pages (`app/(app)/{dashboard,schedule,team,team/chat,
+  leaderboard,tracker,reports,reports/[id],settings,settings/devices,
+  community,profile}`) + `app/admin/layout.tsx` now import from
+  the shared module. Each page is ~10 lines shorter.
+- [x] 7d — `app/globals.css`: pre-existing `font-size: 12`
+  (missing `px`) in `.link-button` is now `12px`. Same fix
+  for `.link-button-danger` (11 -> 11px) and `.status-msg`
+  (12 -> 12px).
+- [x] 7d — `lib/copy.ts`: 6 new keys for the team progress
+  category labels (`team.progressCategory{,Update,Blocker,
+  Milestone,Idea}`) and one for the chat eyebrow
+  (`chat.eyebrow` = "PRIVATE EXECUTION ROOM"). Tests updated
+  to round-trip the new keys.
+- [x] 7d — `components/team/TeamProgressLog.tsx`: category
+  dropdown options now show human-readable labels (Update /
+  Blocker / Milestone / Idea) instead of the raw enum.
+  Logged entries show the human label too. Form inputs use
+  the existing `.input` class instead of inline hex styles.
+- [x] 7d — `components/team/TeamChat.tsx`: removed redundant
+  `aria-live="polite"` on `role="log"` (the log role already
+  manages politeness for its descendants). Chat input uses
+  the existing `.input` class.
+- [x] 7d — `components/team/MilestoneList.tsx`,
+  `components/admin/AdminForms.tsx`,
+  `components/tracker/DailyCheckin.tsx`,
+  `app/(app)/settings/page.tsx`,
+  `app/admin/enrollment/page.tsx`: inline `<input style="..."
+  />` blocks replaced with the existing `.input` utility.
+- [x] 7e — Tests: `tests/globals-css.test.ts` (6 cases —
+  every preset overrides `--accent-text` + `--danger`, `.button`
+  uses the token, no bare `font-size` numbers) and
+  `tests/nav.test.ts` (7 cases — uniqueness, content, surface
+  stability).
+
+Tests: 423/423 passing (was 410, +13: 6 globals-css + 7 nav).
+
+---
+
 # Audit reference
 
 The original audit identified ~150 items split across 3 severity

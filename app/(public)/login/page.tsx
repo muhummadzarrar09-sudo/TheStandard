@@ -63,20 +63,13 @@ export default function Login() {
             placeholder="you@example.com"
             aria-describedby={error ? 'login-error' : undefined}
             aria-invalid={error ? true : undefined}
-            style={{
-              padding: 14,
-              width: '100%',
-              margin: '8px 0 16px',
-              background: '#090a0b',
-              border: '1px solid #29302f',
-              color: 'white'
-            }}
+            className="input"
           />
           {error && (
             <p
               id="login-error"
               role="alert"
-              style={{ color: '#ff8b82' }}
+              style={{ color: 'var(--danger)' }}
             >
               {error}
             </p>

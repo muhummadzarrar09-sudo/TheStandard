@@ -49,13 +49,13 @@ export function MemberForm({ onProvisioned }: { onProvisioned?: (member: Member)
         required
         type="email"
         autoComplete="off"
-        style={{ padding: 12, background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--text)' }}
+        className="input"
       />
       <button className="button" disabled={busy} type="submit" style={{ alignSelf: 'flex-start' }}>
         {busy ? 'Provisioning…' : 'Provision member'}
       </button>
       {message && (
-        <small className="muted" style={{ color: message.kind === 'err' ? '#ff8b82' : 'var(--accent)' }}>
+        <small className="muted" style={{ color: message.kind === 'err' ? 'var(--danger)' : 'var(--accent)' }}>
           {message.text}
         </small>
       )}
@@ -114,7 +114,7 @@ export function ReportForm({ onPublished }: { onPublished?: (report: { id: strin
         placeholder="Report title"
         required
         maxLength={200}
-        style={{ padding: 12, background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--text)' }}
+        className="input"
       />
       <label htmlFor="report-interviewee" className="eyebrow">INTERVIEWEE (optional)</label>
       <input
@@ -123,7 +123,7 @@ export function ReportForm({ onPublished }: { onPublished?: (report: { id: strin
         onChange={e => setInterviewee(e.target.value)}
         placeholder="Interviewee name"
         maxLength={120}
-        style={{ padding: 12, background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--text)' }}
+        className="input"
       />
       <label htmlFor="report-summary" className="eyebrow">SUMMARY</label>
       <textarea
@@ -134,13 +134,14 @@ export function ReportForm({ onPublished }: { onPublished?: (report: { id: strin
         required
         maxLength={10000}
         rows={6}
-        style={{ padding: 12, background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--text)' }}
+        className="input"
+        style={{ font: 'inherit' }}
       />
       <button className="button" disabled={busy} type="submit" style={{ alignSelf: 'flex-start' }}>
         {busy ? 'Publishing…' : 'Publish report'}
       </button>
       {message && (
-        <small className="muted" style={{ color: message.kind === 'err' ? '#ff8b82' : 'var(--accent)' }}>
+        <small className="muted" style={{ color: message.kind === 'err' ? 'var(--danger)' : 'var(--accent)' }}>
           {message.text}
         </small>
       )}

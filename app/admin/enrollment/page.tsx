@@ -78,13 +78,8 @@ export default function Enrollment() {
             <select
               value={selectedId}
               onChange={e => setSelectedId(e.target.value)}
-              style={{
-                padding: 12,
-                background: 'var(--bg)',
-                border: '1px solid var(--line)',
-                color: 'var(--text)',
-                minWidth: 280
-              }}
+              className="input"
+              style={{ minWidth: 280 }}
             >
               {cohorts.map(c => (
                 <option key={c.id} value={c.id}>{c.name} ({c.status})</option>
@@ -122,7 +117,7 @@ export default function Enrollment() {
             <p
               role="status"
               className="muted"
-              style={{ marginTop: 12, color: message.kind === 'err' ? '#ff8b82' : 'var(--accent)' }}
+              style={{ marginTop: 12, color: message.kind === 'err' ? 'var(--danger)' : 'var(--accent)' }}
             >
               {message.text}
             </p>

@@ -5,19 +5,9 @@ import TeamChat from '../../../../components/team/TeamChat'
 import EmptyState from '../../../../components/ui/EmptyState'
 import AppShell from '../../../../components/ui/AppShell'
 import { t } from '../../../../lib/copy'
+import { MEMBER_RAIL } from '../../../../lib/nav'
 
 export const dynamic = 'force-dynamic'
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/schedule', key: 'rail.schedule' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/team/chat', key: 'rail.teamChat' as const },
-  { href: '/leaderboard', key: 'rail.leaderboard' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const }
-]
 
 export default async function Chat() {
   const db = await createSupabaseServer()
@@ -37,7 +27,7 @@ export default async function Chat() {
 
   if (!team) {
     return (
-      <AppShell items={RAIL}>
+      <AppShell items={MEMBER_RAIL}>
         <Link href="/team" className="muted">← {t('team.heading')}</Link>
         <p className="eyebrow" style={{ marginTop: 30 }}>{t('team.chatEyebrow')}</p>
         <h1>{t('chat.heading')}</h1>
@@ -57,7 +47,7 @@ export default async function Chat() {
     .eq('team_id', team.id)
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={MEMBER_RAIL}>
       <Link href="/team" className="muted">← {team.name}</Link>
       <p className="eyebrow" style={{ marginTop: 30 }}>
         TEAM · {team.name.toUpperCase()} · {memberCount ?? 0} MEMBER{(memberCount ?? 0) === 1 ? '' : 'S'}

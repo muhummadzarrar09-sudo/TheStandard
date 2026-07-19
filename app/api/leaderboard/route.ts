@@ -22,7 +22,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   // Tie-breakers: current_streak desc, completion_pct desc,
   // completed_days desc, joined_at asc. PRD 7.3.
-  const { data: rows, error } = await db
+  const { data: rows, error: lbError } = await db
     .from('leaderboard_projection')
     .select('user_id, current_streak, completion_pct, completed_days, profiles!inner(display_name)')
     .eq('cohort_id', profile.cohort_id)
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     .order('completed_days', { ascending: false })
     .order('joined_at', { ascending: true })
 
-  if (error) return toResponse(serverError('Leaderboard unavailable'))
+  if (lbError) return toResponse(serverError('Leaderboard unavailable'))
 
   const members = (rows || []).map((r: any, i: number) => ({
     rank: i + 1,

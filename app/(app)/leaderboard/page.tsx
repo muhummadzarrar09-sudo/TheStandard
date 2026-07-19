@@ -3,19 +3,9 @@ import { createSupabaseServer } from '../../../lib/supabase/server'
 import MetricCard from '../../../components/ui/MetricCard'
 import EmptyState from '../../../components/ui/EmptyState'
 import AppShell from '../../../components/ui/AppShell'
+import { MEMBER_RAIL } from '../../../lib/nav'
 
 export const dynamic = 'force-dynamic'
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/schedule', key: 'rail.schedule' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/team/chat', key: 'rail.teamChat' as const },
-  { href: '/leaderboard', key: 'rail.leaderboard' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const }
-]
 
 export default async function Leaderboard() {
   const db = await createSupabaseServer()
@@ -31,7 +21,7 @@ export default async function Leaderboard() {
 
   if (!cohortId) {
     return (
-      <AppShell items={RAIL}>
+      <AppShell items={MEMBER_RAIL}>
         <p className="eyebrow">LEADERBOARD</p>
         <h1>Keep the line.</h1>
         <EmptyState
@@ -55,7 +45,7 @@ export default async function Leaderboard() {
 
   if (error) {
     return (
-      <AppShell items={RAIL}>
+      <AppShell items={MEMBER_RAIL}>
         <p className="eyebrow">LEADERBOARD</p>
         <h1>Keep the line.</h1>
         <p className="muted">Leaderboard temporarily unavailable. Try again in a moment.</p>
@@ -75,7 +65,7 @@ export default async function Leaderboard() {
   const leader = ranked[0] || null
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={MEMBER_RAIL}>
       <p className="eyebrow">COHORT · CONSISTENCY INDEX</p>
       <h1>Keep the line.</h1>
       <p className="muted">

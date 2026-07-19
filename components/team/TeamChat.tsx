@@ -220,7 +220,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <p className="eyebrow">PRIVATE EXECUTION ROOM</p>
+        <p className="eyebrow">{t('chat.eyebrow')}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {unread > 0 && (
             <span
@@ -228,7 +228,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
               aria-live="polite"
               style={{
                 background: 'var(--accent)',
-                color: '#10140c',
+                color: 'var(--accent-text)',
                 padding: '2px 8px',
                 fontSize: 11,
                 fontWeight: 700,
@@ -254,7 +254,6 @@ export default function TeamChat({ teamId }: { teamId: string }) {
         onScroll={onScroll}
         role="log"
         aria-label={t('chat.heading')}
-        aria-live="polite"
         style={{ minHeight: 250, maxHeight: 400, overflowY: 'auto', padding: '12px 0' }}
       >
         {hasMore && (
@@ -284,7 +283,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
               aria-label={isOwn ? t('chat.ariaYouAt', 'en', { time }) : t('chat.ariaTeammateAt', 'en', { time })}
               style={{
                 padding: 12,
-                background: isOwn ? 'var(--accent)12' : 'var(--bg)',
+                background: isOwn ? 'color-mix(in srgb, var(--accent) 12%, var(--bg))' : 'var(--bg)',
                 border: '1px solid var(--line)',
                 borderRadius: 4,
                 marginBottom: 6,
@@ -305,7 +304,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
                       style={{
                         background: 'none',
                         border: 0,
-                        color: '#ff8b82',
+                        color: 'var(--danger)',
                         cursor: 'pointer',
                         padding: 0,
                         fontSize: 11
@@ -329,7 +328,8 @@ export default function TeamChat({ teamId }: { teamId: string }) {
           maxLength={MAX_BODY}
           placeholder={t('chat.inputPlaceholder')}
           aria-label={t('chat.inputLabel')}
-          style={{ flex: 1, padding: 12, background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--text)' }}
+          className="input"
+          style={{ flex: 1 }}
         />
         <button
           className="button"
@@ -345,7 +345,7 @@ export default function TeamChat({ teamId }: { teamId: string }) {
           role="alert"
           aria-live="assertive"
           className="muted"
-          style={{ color: '#ff8b82', marginTop: 8, fontSize: 12 }}
+          style={{ color: 'var(--danger)', marginTop: 8, fontSize: 12 }}
         >
           {errorMsg}
         </p>

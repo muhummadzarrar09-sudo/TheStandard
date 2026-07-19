@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppShell from '../../../components/ui/AppShell'
+import { MEMBER_RAIL } from '../../../lib/nav'
 
 type Device = {
   id: string
@@ -9,17 +10,6 @@ type Device = {
   last_seen_at: string
   revoked_at: string | null
 }
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/schedule', key: 'rail.schedule' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/team/chat', key: 'rail.teamChat' as const },
-  { href: '/leaderboard', key: 'rail.leaderboard' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const }
-]
 
 export default function Devices() {
   const [devices, setDevices] = useState<Device[]>([])
@@ -60,12 +50,12 @@ export default function Devices() {
   }
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={MEMBER_RAIL}>
       <p className="eyebrow">SETTINGS · SECURITY</p>
       <h1>Active devices.</h1>
       <p className="muted">Two devices maximum. Revoke a session before signing in somewhere new.</p>
       {error && (
-        <p role="alert" className="muted" style={{ color: '#ff8b82', marginTop: 12 }}>
+        <p role="alert" className="muted" style={{ color: 'var(--danger)', marginTop: 12 }}>
           {error}
         </p>
       )}

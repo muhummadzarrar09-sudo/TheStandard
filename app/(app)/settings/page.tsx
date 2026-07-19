@@ -6,19 +6,9 @@ import { themes } from '../../../themes'
 import PushSubscription from '../../../components/pwa/PushSubscription'
 import AppShell from '../../../components/ui/AppShell'
 import { t } from '../../../lib/copy'
+import { MEMBER_RAIL } from '../../../lib/nav'
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/schedule', key: 'rail.schedule' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/team/chat', key: 'rail.teamChat' as const },
-  { href: '/leaderboard', key: 'rail.leaderboard' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const }
-]
 
 type Prefs = {
   daily_reminder: boolean
@@ -105,7 +95,7 @@ export default function Settings() {
   }
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={MEMBER_RAIL}>
       <p className="eyebrow">ACCOUNT · APPEARANCE</p>
       <h1>{t('settings.heading')}</h1>
 
@@ -243,7 +233,8 @@ export default function Settings() {
                   type="time"
                   value={prefs.quiet_start || ''}
                   onChange={e => setQuietTime('quiet_start', e.target.value)}
-                  style={{ padding: 8, background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--text)' }}
+                  className="input"
+                  style={{ padding: 8, width: 'auto' }}
                 />
               </label>
               <label>
@@ -252,7 +243,8 @@ export default function Settings() {
                   type="time"
                   value={prefs.quiet_end || ''}
                   onChange={e => setQuietTime('quiet_end', e.target.value)}
-                  style={{ padding: 8, background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--text)' }}
+                  className="input"
+                  style={{ padding: 8, width: 'auto' }}
                 />
               </label>
               <span className="muted" style={{ fontSize: 11 }} aria-live="polite">
@@ -265,7 +257,7 @@ export default function Settings() {
               <p
                 className="muted"
                 role="status"
-                style={{ color: prefsMsg.kind === 'err' ? '#ff8b82' : 'var(--accent)', fontSize: 12 }}
+                style={{ color: prefsMsg.kind === 'err' ? 'var(--danger)' : 'var(--accent)', fontSize: 12 }}
               >
                 {prefsMsg.text}
               </p>

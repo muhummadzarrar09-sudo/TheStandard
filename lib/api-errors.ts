@@ -33,7 +33,7 @@ export class ApiError extends Error {
   }
 }
 
-function buildBody(message: string, options: { field?: string; details?: unknown }): ApiErrorBody {
+export function buildBody(message: string, options: { field?: string; details?: unknown }): ApiErrorBody {
   const body: ApiErrorBody = { error: message }
   if (options.field !== undefined) body.field = options.field
   if (options.details !== undefined) body.details = options.details

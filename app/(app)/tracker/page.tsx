@@ -5,19 +5,9 @@ import { consecutiveDays, bestStreak } from '../../../lib/domain/streaks'
 import ProgressHistory from '../../../components/tracker/ProgressHistory'
 import AppShell from '../../../components/ui/AppShell'
 import { t } from '../../../lib/copy'
+import { MEMBER_RAIL } from '../../../lib/nav'
 
 export const dynamic = 'force-dynamic'
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/schedule', key: 'rail.schedule' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/team/chat', key: 'rail.teamChat' as const },
-  { href: '/leaderboard', key: 'rail.leaderboard' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const }
-]
 
 export default async function Tracker() {
   const db = await createSupabaseServer()
@@ -52,7 +42,7 @@ export default async function Tracker() {
   const totalCompleted = completedDates.length
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={MEMBER_RAIL}>
       <p className="eyebrow">PERSONAL RECORD · 30 DAYS</p>
       <h1>{t('tracker.heading')}</h1>
       <div className="grid" style={{ marginTop: 30 }}>

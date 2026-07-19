@@ -48,7 +48,7 @@ export default function Analytics() {
         Aggregated cohort signals only. Private reflections and personal notes are never shown here.
       </p>
       {error && (
-        <p role="alert" className="muted" style={{ color: '#ff8b82', marginTop: 12 }}>
+        <p role="alert" className="muted" style={{ color: 'var(--danger)', marginTop: 12 }}>
           {error}
         </p>
       )}

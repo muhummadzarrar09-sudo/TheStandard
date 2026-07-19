@@ -56,7 +56,7 @@ export default function ReportsAdmin() {
         {loading ? (
           <p className="muted" role="status">Loading reports…</p>
         ) : error ? (
-          <p className="muted" role="alert" style={{ color: '#ff8b82' }}>{error}</p>
+          <p className="muted" role="alert" style={{ color: 'var(--danger)' }}>{error}</p>
         ) : reports.length === 0 ? (
           <p className="muted">No reports published yet. Use the form above to publish the first one.</p>
         ) : (

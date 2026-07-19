@@ -83,7 +83,7 @@ export default function MilestoneList({ teamId }: { teamId: string }) {
             role="status"
             aria-live="polite"
             className="muted"
-            style={{ color: state === 'error' ? '#ff8b82' : 'var(--accent)' }}
+            style={{ color: state === 'error' ? 'var(--danger)' : 'var(--accent)' }}
           >
             {statusMsg}
           </small>
@@ -116,12 +116,8 @@ export default function MilestoneList({ teamId }: { teamId: string }) {
               value={x.status}
               onChange={e => update(x.id, e.target.value as M['status'])}
               aria-label={`Status for ${x.title}`}
-              style={{
-                background: 'var(--bg)',
-                color: 'var(--text)',
-                border: '1px solid var(--line)',
-                padding: 8
-              }}
+              className="input"
+              style={{ width: 'auto', padding: 8 }}
             >
               <option value="planned">Planned</option>
               <option value="in_progress">In progress</option>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { t } from '../../lib/copy'
 
 type Entry = {
   id: string
@@ -14,7 +15,12 @@ type Entry = {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
-const CATEGORIES: Entry['category'][] = ['update', 'blocker', 'milestone', 'idea']
+const CATEGORIES: { value: Entry['category']; labelKey: 'team.progressCategoryUpdate' | 'team.progressCategoryBlocker' | 'team.progressCategoryMilestone' | 'team.progressCategoryIdea' }[] = [
+  { value: 'update',    labelKey: 'team.progressCategoryUpdate' },
+  { value: 'blocker',   labelKey: 'team.progressCategoryBlocker' },
+  { value: 'milestone', labelKey: 'team.progressCategoryMilestone' },
+  { value: 'idea',      labelKey: 'team.progressCategoryIdea' }
+]
 
 // The team progress log. Members can post short text + optional
 // link + category. The category is a fixed enum (PRD §7.4).
@@ -115,34 +121,23 @@ export default function TeamProgressLog({ teamId }: { teamId: string }) {
           maxLength={3000}
           required
           aria-describedby="progress-help"
-          style={{
-            width: '100%',
-            minHeight: 70,
-            padding: 12,
-            background: 'var(--bg)',
-            border: '1px solid var(--line)',
-            color: 'var(--text)',
-            font: 'inherit'
-          }}
+          className="input"
+          style={{ minHeight: 70, font: 'inherit' }}
         />
         <small id="progress-help" className="muted" style={{ fontSize: 11 }}>
           Visible to your team. Private reflections stay private.
         </small>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label htmlFor="progress-category" className="visually-hidden">Category</label>
+          <label htmlFor="progress-category" className="visually-hidden">{t('team.progressCategory')}</label>
           <select
             id="progress-category"
             value={category}
             onChange={e => setCategory(e.target.value as Entry['category'])}
-            aria-label="Category"
-            style={{
-              padding: 8,
-              background: 'var(--bg)',
-              border: '1px solid var(--line)',
-              color: 'var(--text)'
-            }}
+            aria-label={t('team.progressCategory')}
+            className="input"
+            style={{ flex: '0 0 auto', width: 'auto' }}
           >
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{t(c.labelKey)}</option>)}
           </select>
           <label htmlFor="progress-link" className="visually-hidden">Link (optional)</label>
           <input
@@ -152,13 +147,8 @@ export default function TeamProgressLog({ teamId }: { teamId: string }) {
             onChange={e => setLink(e.target.value)}
             placeholder="Optional link (https://…)"
             maxLength={500}
-            style={{
-              flex: 1,
-              padding: 8,
-              background: 'var(--bg)',
-              border: '1px solid var(--line)',
-              color: 'var(--text)'
-            }}
+            className="input"
+            style={{ flex: 1, padding: 8 }}
           />
           <button
             type="submit"
@@ -174,7 +164,7 @@ export default function TeamProgressLog({ teamId }: { teamId: string }) {
             role="status"
             aria-live="polite"
             className="muted"
-            style={{ color: state === 'error' ? '#ff8b82' : 'var(--accent)', fontSize: 12, margin: 0 }}
+            style={{ color: state === 'error' ? 'var(--danger)' : 'var(--accent)', fontSize: 12, margin: 0 }}
           >
             {statusMsg}
           </p>
@@ -197,7 +187,12 @@ export default function TeamProgressLog({ teamId }: { teamId: string }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <b>{e.profiles?.display_name || 'Member'}</b>
                 <span className="muted" style={{ fontSize: 11 }}>
-                  {new Date(e.created_at).toLocaleString()} · {e.category}
+                  {new Date(e.created_at).toLocaleString()} · {t(
+                    e.category === 'update' ? 'team.progressCategoryUpdate' :
+                    e.category === 'blocker' ? 'team.progressCategoryBlocker' :
+                    e.category === 'milestone' ? 'team.progressCategoryMilestone' :
+                    'team.progressCategoryIdea'
+                  )}
                 </span>
               </div>
               <p style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap' }}>{e.body}</p>

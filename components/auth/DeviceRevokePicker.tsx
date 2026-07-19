@@ -51,7 +51,7 @@ export default function DeviceRevokePicker({ sessions, onResolved, onCancel }: P
         The other sessions stay signed in.
       </p>
       {error && (
-        <p role="alert" style={{ color: '#ff8b82', margin: '0 0 10px', fontSize: 13 }}>
+        <p role="alert" style={{ color: 'var(--danger)', margin: '0 0 10px', fontSize: 13 }}>
           {error}
         </p>
       )}

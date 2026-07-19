@@ -7,19 +7,9 @@ import TeamProgressLog from '../../../components/team/TeamProgressLog'
 import EmptyState from '../../../components/ui/EmptyState'
 import AppShell from '../../../components/ui/AppShell'
 import { t } from '../../../lib/copy'
+import { MEMBER_RAIL } from '../../../lib/nav'
 
 export const dynamic = 'force-dynamic'
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/schedule', key: 'rail.schedule' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/team/chat', key: 'rail.teamChat' as const },
-  { href: '/leaderboard', key: 'rail.leaderboard' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const }
-]
 
 export default async function Team() {
   const db = await createSupabaseServer()
@@ -39,7 +29,7 @@ export default async function Team() {
 
   if (!team) {
     return (
-      <AppShell items={RAIL}>
+      <AppShell items={MEMBER_RAIL}>
         <p className="eyebrow">TEAM</p>
         <h1>Your team is being assembled.</h1>
         <p className="muted">{t('team.emptyDetail')}</p>
@@ -65,7 +55,7 @@ export default async function Team() {
     .gte('created_at', sevenDaysAgo)
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={MEMBER_RAIL}>
       <p className="eyebrow">
         TEAM · {team.name.toUpperCase()} · {memberCount ?? 0} MEMBER{(memberCount ?? 0) === 1 ? '' : 'S'}
       </p>

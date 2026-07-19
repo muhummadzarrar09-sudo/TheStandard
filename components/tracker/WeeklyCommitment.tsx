@@ -81,7 +81,7 @@ export default function WeeklyCommitment() {
             role="status"
             aria-live="polite"
             className="muted"
-            style={{ color: state === 'error' ? '#ff8b82' : 'var(--accent)' }}
+            style={{ color: state === 'error' ? 'var(--danger)' : 'var(--accent)' }}
           >
             {statusMsg}
           </small>

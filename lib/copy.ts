@@ -61,12 +61,18 @@ export type CopyKey =
   | 'team.objective'
   | 'team.cadence'
   | 'team.openChat'
+  | 'team.progressCategoryUpdate'
+  | 'team.progressCategoryBlocker'
+  | 'team.progressCategoryMilestone'
+  | 'team.progressCategoryIdea'
+  | 'team.progressCategory'
   | 'team.chatEyebrow'
   | 'team.chatNotAssigned'
   | 'team.chatPendingEyebrow'
   | 'team.chatPendingTitle'
   | 'team.chatPendingBody'
   | 'chat.heading'
+  | 'chat.eyebrow'
   | 'chat.empty'
   | 'chat.send'
   | 'chat.sending'
@@ -164,12 +170,18 @@ const en: Record<CopyKey, string> = {
   'team.objective': 'CURRENT OBJECTIVE',
   'team.cadence': 'WEEKLY CADENCE',
   'team.openChat': 'Open execution chat →',
+  'team.progressCategory': 'Category',
+  'team.progressCategoryUpdate': 'Update',
+  'team.progressCategoryBlocker': 'Blocker',
+  'team.progressCategoryMilestone': 'Milestone',
+  'team.progressCategoryIdea': 'Idea',
   'team.chatEyebrow': 'TEAM CHAT',
   'team.chatNotAssigned': 'No team assigned yet.',
   'team.chatPendingEyebrow': 'PENDING',
   'team.chatPendingTitle': 'Team chat opens with your team assignment.',
   'team.chatPendingBody': 'Once the cohort lead assigns your team, this page becomes your private execution room.',
   'chat.heading': 'Team chat.',
+  'chat.eyebrow': 'PRIVATE EXECUTION ROOM',
   'chat.empty': 'No messages yet. Be the first to start the room.',
   'chat.send': 'Send →',
   'chat.sending': 'sending…',

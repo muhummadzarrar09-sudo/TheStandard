@@ -100,19 +100,23 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<Response
         log.warn({ request_id: requestId, status: api.status, error: api.body.error, field: api.body.field }, 'api error response')
         response = toResponse(api)
       } else if (err instanceof ApiError) {
-        log.warn({ request_id: requestId, status: err.status, error: err.message, field: err.field }, 'api error response')
+        const apiErr = err as ApiError
+        log.warn({ request_id: requestId, status: apiErr.status, error: apiErr.message, field: apiErr.field }, 'api error response')
         response = toResponse({
-          status: err.status,
-          body: buildBody(err.message, { field: err.field, details: err.details })
+          status: apiErr.status,
+          body: buildBody(apiErr.message, { field: apiErr.field, details: apiErr.details })
         })
       } else if (err instanceof ZodError) {
-        log.warn({ request_id: requestId, status: 400, details: err.flatten() }, 'zod validation failed')
+        const zerr = err as ZodError
+        log.warn({ request_id: requestId, status: 400, details: zerr.flatten() }, 'zod validation failed')
         response = toResponse({
           status: 400,
-          body: { error: 'Validation failed', details: err.flatten() }
+          body: { error: 'Validation failed', details: zerr.flatten() }
         })
       } else {
-        log.error({ request_id: requestId, err: err instanceof Error ? { message: err.message, stack: err.stack } : String(err) }, 'unhandled api error')
+        const msg = err instanceof Error ? err.message : String(err)
+        const stack = err instanceof Error ? err.stack : undefined
+        log.error({ request_id: requestId, err: stack ? { message: msg, stack } : msg }, 'unhandled api error')
         response = toResponse(serverError())
       }
     }

@@ -3,19 +3,9 @@ import { notFound } from 'next/navigation'
 import { createSupabaseServer } from '../../../../lib/supabase/server'
 import SaveOfflineButton from '../../../../components/reports/SaveOfflineButton'
 import AppShell from '../../../../components/ui/AppShell'
+import { MEMBER_RAIL } from '../../../../lib/nav'
 
 export const dynamic = 'force-dynamic'
-
-const RAIL = [
-  { href: '/dashboard', key: 'rail.today' as const },
-  { href: '/schedule', key: 'rail.schedule' as const },
-  { href: '/tracker', key: 'rail.tracker' as const },
-  { href: '/team', key: 'rail.team' as const },
-  { href: '/team/chat', key: 'rail.teamChat' as const },
-  { href: '/leaderboard', key: 'rail.leaderboard' as const },
-  { href: '/reports', key: 'rail.reports' as const },
-  { href: '/settings', key: 'rail.settings' as const }
-]
 
 export default async function ReportDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -29,7 +19,7 @@ export default async function ReportDetail({ params }: { params: Promise<{ id: s
   if (!report) return notFound()
 
   return (
-    <AppShell items={RAIL}>
+    <AppShell items={MEMBER_RAIL}>
       <Link href="/reports" className="muted">← Intelligence library</Link>
       <p className="eyebrow" style={{ marginTop: 35 }}>
         INTERVIEW · {new Date(report.published_at).toLocaleDateString()} · VERSION {report.version}

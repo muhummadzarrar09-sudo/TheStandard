@@ -68,7 +68,7 @@ export default function Members() {
         {loading ? (
           <p className="muted" role="status">Loading members…</p>
         ) : error ? (
-          <p className="muted" role="alert" style={{ color: '#ff8b82' }}>{error}</p>
+          <p className="muted" role="alert" style={{ color: 'var(--danger)' }}>{error}</p>
         ) : members.length === 0 ? (
           <p className="muted">No members yet. Use the form above to provision the first one.</p>
         ) : (
