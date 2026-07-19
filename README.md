@@ -27,7 +27,7 @@ npm test
 npm run build
 
 # 4. Apply Supabase migrations in order
-#    supabase/migrations/001 through 013 (use the Supabase CLI):
+#    supabase/migrations/001 through 020 (use the Supabase CLI):
 supabase db push
 
 # 5. Deploy the Edge Functions
@@ -52,7 +52,9 @@ Node 22 is required (`engines` in `package.json`).
 - `components/` — UI and feature components.
 - `themes/` — six theme presets and the provider.
 - `lib/` — Supabase, auth, domain, validation, notifications, offline
-  helpers, and the server auth helper.
+  helpers, the structured logger, the request-id context, the
+  per-IP rate limiter, the API error + handler wrappers, and the
+  i18n copy table.
 - `supabase/` — migrations and Edge Functions. See `supabase/README.md`
   (or the comments in each function) for deploy details.
 - `tests/` — Vitest unit tests for the domain layer.

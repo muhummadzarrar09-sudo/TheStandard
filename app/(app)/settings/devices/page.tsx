@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import AppShellClient from '../../../components/ui/AppShellClient'
+import AppShell from '../../../components/ui/AppShell'
 
 type Device = {
   id: string
@@ -60,7 +60,7 @@ export default function Devices() {
   }
 
   return (
-    <AppShellClient items={RAIL}>
+    <AppShell items={RAIL}>
       <p className="eyebrow">SETTINGS · SECURITY</p>
       <h1>Active devices.</h1>
       <p className="muted">Two devices maximum. Revoke a session before signing in somewhere new.</p>
@@ -107,6 +107,6 @@ export default function Devices() {
           </ul>
         )}
       </section>
-    </AppShellClient>
+    </AppShell>
   )
 }

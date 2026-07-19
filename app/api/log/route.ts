@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { log } from '../../../lib/log'
 import { badRequest, toResponse, serverError, withErrorHandling } from '../../../lib/api-errors'
 import { withRequestIdHeader } from '../../../lib/api-handler'
+import { rateLimit } from '../../../lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,6 +10,12 @@ export const dynamic = 'force-dynamic'
 // the endpoint cheap and to prevent abuse.
 const MAX_BODY = 4 * 1024
 const MAX_FIELD = 500
+
+// Per-IP rate limit. 60 entries per minute is plenty for a real client
+// (a single error boundary firing is well under 5 entries) and stops
+// a misbehaving tab from filling the structured log stream.
+const RATE_MAX = 60
+const RATE_WINDOW_MS = 60_000
 
 function trimField(v: unknown): unknown {
   if (typeof v === 'string') {
@@ -38,6 +45,16 @@ function trimField(v: unknown): unknown {
 // no auth check, no DB write — so a degraded client can always report.
 export const POST = withErrorHandling(
   withRequestIdHeader(async (req: NextRequest): Promise<Response> => {
+    const limited = rateLimit(req, { key: 'log', max: RATE_MAX, windowMs: RATE_WINDOW_MS })
+    if (!limited.ok) {
+      return new Response(JSON.stringify(limited.response.body), {
+        status: limited.response.status,
+        headers: {
+          'content-type': 'application/json',
+          'retry-after': String(limited.retryAfterSeconds)
+        }
+      })
+    }
     const text = await req.text()
     if (text.length > MAX_BODY) {
       return toResponse(badRequest('Body too large'))

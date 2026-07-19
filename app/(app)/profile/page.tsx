@@ -2,8 +2,18 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '../../../lib/supabase/server'
 import { localDateInTimezone } from '../../../lib/domain'
+import AppShell from '../../../components/ui/AppShell'
 
 export const dynamic = 'force-dynamic'
+
+const RAIL = [
+  { href: '/dashboard', key: 'rail.today' as const },
+  { href: '/tracker', key: 'rail.tracker' as const },
+  { href: '/team', key: 'rail.team' as const },
+  { href: '/reports', key: 'rail.reports' as const },
+  { href: '/settings', key: 'rail.settings' as const },
+  { href: '/profile', key: 'rail.profile' as const }
+]
 
 export default async function Profile() {
   const db = await createSupabaseServer()
@@ -29,18 +39,18 @@ export default async function Profile() {
     : 30
 
   return (
-    <main className="main">
+    <AppShell items={RAIL}>
       <p className="eyebrow">ACCOUNT · PROFILE</p>
       <h1>Your member profile.</h1>
 
-      <section className="card" style={{ marginTop: 30 }}>
+      <section className="card" style={{ marginTop: 30 }} aria-label="Identity">
         <p className="eyebrow">IDENTITY</p>
         <h2>{profile?.display_name || 'Member'}</h2>
         <p className="muted">{profile?.email || ''}</p>
         <p className="muted">Email is managed through passwordless authentication — there is no password to change.</p>
       </section>
 
-      <section className="card" style={{ marginTop: 15 }}>
+      <section className="card" style={{ marginTop: 15 }} aria-label="Timezone">
         <p className="eyebrow">TIMEZONE</p>
         <p>{profile?.timezone || 'UTC'}</p>
         <p className="muted">
@@ -48,7 +58,7 @@ export default async function Profile() {
         </p>
       </section>
 
-      <section className="card" style={{ marginTop: 15 }}>
+      <section className="card" style={{ marginTop: 15 }} aria-label="Cohort">
         <p className="eyebrow">COHORT</p>
         <p>{cohortName}{cohortDay ? ` · Day ${cohortDay} of ${totalDays}` : ''}</p>
         {cohortStart && <p className="muted">Starts {cohortStart.toISOString().slice(0, 10)}{cohortEnd ? ` · ends ${cohortEnd.toISOString().slice(0, 10)}` : ''}</p>}
@@ -59,6 +69,6 @@ export default async function Profile() {
           <p className="muted">Access closes {new Date(profile.access_end_at).toISOString().slice(0, 10)}</p>
         )}
       </section>
-    </main>
+    </AppShell>
   )
 }

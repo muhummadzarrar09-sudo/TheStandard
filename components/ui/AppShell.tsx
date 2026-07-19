@@ -4,28 +4,43 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { t } from '../../lib/copy'
 
-type RailItem = {
-  href: string
-  key: 'rail.today' | 'rail.schedule' | 'rail.tracker' | 'rail.team' | 'rail.teamChat' | 'rail.leaderboard' | 'rail.reports' | 'rail.community' | 'rail.settings' | 'rail.profile' | 'rail.admin.members' | 'rail.admin.enrollment' | 'rail.admin.analytics' | 'rail.admin.reports'
-}
+type RailKey =
+  | 'rail.today'
+  | 'rail.schedule'
+  | 'rail.tracker'
+  | 'rail.team'
+  | 'rail.teamChat'
+  | 'rail.leaderboard'
+  | 'rail.reports'
+  | 'rail.community'
+  | 'rail.settings'
+  | 'rail.profile'
+  | 'rail.admin.members'
+  | 'rail.admin.enrollment'
+  | 'rail.admin.analytics'
+  | 'rail.admin.reports'
+
+type RailItem = { href: string; key: RailKey }
 
 type Props = {
   items: RailItem[]
-  brand?: { line1: string; line2: string }
   children: React.ReactNode
 }
 
 // A consistent rail with active-link highlighting. The pathname-aware
 // active state is computed client-side so it stays correct after
-// client-side navigation (Next 16 keeps the layout mounted).
-export default function AppShell({ items, brand, children }: Props) {
+// client-side navigation. The shell is a client component because
+// `usePathname` is; server pages can still pass server-rendered
+// children through it (the children render on the server, only the
+// shell runs on the client).
+export default function AppShell({ items, children }: Props) {
   const pathname = usePathname() || '/'
   return (
     <div className="shell">
       <aside className="rail" aria-label="Primary navigation">
         <div className="brand">
-          {brand?.line1 ?? t('app.brand')}
-          <small>{brand?.line2 ?? t('app.brandSub')}</small>
+          {t('app.brand')}
+          <small>{t('app.brandSub')}</small>
         </div>
         <nav>
           {items.map(item => {

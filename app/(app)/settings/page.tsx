@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useTheme, presets } from '../../../themes/theme-provider'
 import { themes } from '../../../themes'
 import PushSubscription from '../../../components/pwa/PushSubscription'
-import AppShellClient from '../../../components/ui/AppShellClient'
+import AppShell from '../../../components/ui/AppShell'
 import { t } from '../../../lib/copy'
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -105,7 +105,7 @@ export default function Settings() {
   }
 
   return (
-    <AppShellClient items={RAIL}>
+    <AppShell items={RAIL}>
       <p className="eyebrow">ACCOUNT · APPEARANCE</p>
       <h1>{t('settings.heading')}</h1>
 
@@ -282,6 +282,6 @@ export default function Settings() {
           <Link href="/settings/devices">{t('settings.devicesLink')}</Link>
         </div>
       </section>
-    </AppShellClient>
+    </AppShell>
   )
 }

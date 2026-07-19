@@ -217,3 +217,48 @@ Three themes:
 - [x] Team, TeamChat, Reports, Leaderboard, Tracker, Schedule, Dashboard — all use AppShell, copy table, proper aria
 - [x] Admin layout — wraps children in AppShell; admin pages no longer render their own rail (removed <main> wrappers, use fragments)
 - [x] Settings (client) + Devices (client) — use AppShellClient
+
+---
+
+# Phase 2 Batch 5 — Final consistency sweep
+
+The last batch. Closes the gaps that the prior batches left: 2
+un-audited pages, an unauthenticated endpoint with no rate limit,
+no integration test coverage of the API routes, and a tiny dead file.
+
+Scope:
+- 5a: refactor `app/(app)/community` and `app/(app)/profile` to use
+  AppShell + copy table (they were missed in Batch 4). Collapse
+  AppShell and AppShellClient into a single component since they
+  were already 100% identical.
+- 5b: per-IP rate limit on `/api/log` (60 req / minute, sliding window
+  approximation, O(1), no Redis dependency). Process-local Map with
+  bounded LRU-style eviction. Adds 8 unit tests.
+- 5c: integration test scaffolding. Tiny Supabase mock at
+  `tests/_helpers/mockSupabase.ts` that covers the postgrest-js chain
+  surface the routes use. One route-level integration test
+  (`api-schedule-complete.test.ts`) covering the validation surface,
+  device-session guard, day-cutoff guard, and time-of-day guard —
+  8 tests, uses `vi.useFakeTimers()` to pin "now" deterministically.
+- 5d: dead code audit. `lib/timezone.ts` had no callers, removed.
+  `console.*` calls in `lib/log.ts` and `lib/api-errors.ts` are
+  intentional (logger sink + ops visibility) — left in place. The
+  ServiceWorkerRegistration console calls are dev-mode diagnostics
+  — left in place.
+- 5e: README + PHASE0_LOG sync. Migration list bumped to 001–020,
+  `lib/` description updated to mention log, request-context,
+  rate-limit, api-errors, api-handler, copy.
+
+## Status
+- [x] 5a — `app/(app)/community` + `app/(app)/profile` use AppShell
+- [x] 5a — AppShellClient merged into AppShell (both were identical client components); settings + devices now import AppShell directly
+- [x] 5b — `lib/rate-limit.ts`: per-IP, sliding-window, O(1); supports x-forwarded-for and x-real-ip; bounded at 10k buckets; `_resetRateLimitForTests()` exposed
+- [x] 5b — `/api/log` wired through `rateLimit(..., { key: 'log', max: 60, windowMs: 60_000 })`; 429s carry `retry-after` header
+- [x] 5c — `tests/_helpers/mockSupabase.ts`: table-aware chainable mock; `overrides` map for terminal ops
+- [x] 5c — `tests/api-schedule-complete.test.ts`: 8 cases (401, missing blockKey, bad timezone, unknown blockKey, too-short clientEventId, revoked device, day-closed, block-not-yet-active)
+- [x] 5d — `lib/timezone.ts` deleted (no callers)
+- [x] 5d — `console.*` audit: 6 calls remain, all intentional (logger sink, postgrest-error visibility, SW dev-mode logs)
+- [x] 5e — README.md: migration list 001–020; `lib/` description updated
+- [x] 5e — PHASE0_LOG.md: this section
+
+Tests: 296/296 passing (was 288). Batch 5 commit lands with this log.
