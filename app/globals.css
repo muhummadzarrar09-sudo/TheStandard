@@ -1,39 +1,218 @@
-:root{--bg:#090a0b;--surface:#111415;--line:#29302f;--text:#eef2ed;--muted:#899390;--accent:#c7f36b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,sans-serif}a{color:inherit;text-decoration:none}.shell{display:flex;min-height:100vh}.rail{width:230px;border-right:1px solid var(--line);padding:28px 18px}.rail nav{display:grid;gap:5px;margin-top:60px}.rail nav a{padding:12px;color:var(--muted)}.rail nav a:hover,.rail nav a.active{background:#c7f36b12;color:var(--accent)}.brand{font-weight:800;letter-spacing:.16em}.brand small{display:block;color:var(--muted);font-size:9px;margin-top:5px}.main{max-width:1100px;width:100%;padding:54px 6%;margin:auto}.main:focus{outline:none}.eyebrow{color:var(--muted);font-size:10px;letter-spacing:.15em}.card{background:var(--surface);border:1px solid var(--line);padding:24px}.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:15px}.button{background:var(--accent);border:0;padding:12px 16px;color:#10140c;font-weight:700;cursor:pointer}.muted{color:var(--muted)}@media(max-width:700px){.rail{display:none}.main{padding:30px 20px}.grid{grid-template-columns:1fr}}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}:root[data-theme="linear"]{--bg:#0d0d0f;--surface:#151518;text:#f5f5f5;--line:#2b2b31;--accent:#8ab4ff}:root[data-theme="duolingo"]{--bg:#f4f7f4;--surface:#fff;--line:#d9e2dc;--text:#18231e;--muted:#63756c;--accent:#48b86a}:root[data-theme="robinhood"]{--bg:#f7f8f8;--surface:#ffffff;--line:#dfe6e2;--text:#13231b;--muted:#687871;--accent:#00a86b}:root[data-theme="arc"]{--bg:#17132a;--surface:#241d3d;--line:#443666;--text:#faf7ff;--muted:#aaa0c5;--accent:#ff8ebd}:root[data-theme="discord"]{--bg:#313338;--surface:#2b2d31;--text:#f2f3f5;--muted:#b5bac1;--accent:#5865f2}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}h1,h2,h3,p{max-width:70ch}.button{border-radius:4px}.card{border-radius:4px}button:disabled{opacity:.6;cursor:not-allowed}
+/* ======================================================================
+   Discipline OS — theme system
+   ======================================================================
+   The preset attribute on <html> swaps not just the color palette
+   (--bg/--accent/etc.) but also density (--density), font family
+   (--font), and the button radius (--radius). The PRD §7.8 says
+   "each changes visual hierarchy, density, typography, motion, and
+   component treatment — not merely colors." This is the minimum
+   honest interpretation: a single attribute that touches the
+   *system* of the page, not just its colors.
+
+   The tokens below are:
+     --bg, --surface, --line, --text, --muted, --accent  (palette)
+     --font, --font-scale                                  (typography)
+     --radius, --radius-lg                                 (component shape)
+     --density, --gap                                       (layout density)
+   Each preset overrides the set. Components use the tokens via
+   var(--token) so a preset switch is a one-attribute change.
+   ====================================================================== */
+
+:root {
+  /* Base palette (default = whoop-oura). */
+  --bg: #090a0b;
+  --surface: #111415;
+  --line: #29302f;
+  --text: #eef2ed;
+  --muted: #899390;
+  --accent: #c7f36b;
+
+  /* Base typography. */
+  --font: Manrope, system-ui, sans-serif;
+  --font-scale: 1;
+  --line-height: 1.5;
+
+  /* Base shape. */
+  --radius: 4px;
+  --radius-lg: 4px;
+
+  /* Base density. -1 = compact, 0 = balanced, +1 = spacious. */
+  --density: 1;
+  --gap: 24px;
+}
+
+* { box-sizing: border-box }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/var(--line-height) var(--font);
+  font-size: calc(14px * var(--font-scale));
+}
+a { color: inherit; text-decoration: none }
+
+/* The shell. The rail width and the main padding derive from
+   --gap so the density preset scales them. */
+.shell { display: flex; min-height: 100vh }
+.rail {
+  width: calc(180px + var(--gap) * 2);
+  border-right: 1px solid var(--line);
+  padding: calc(20px + var(--gap) * 0.4) calc(14px + var(--gap) * 0.2);
+}
+.rail nav { display: grid; gap: calc(4px + var(--density) * 2px); margin-top: calc(40px + var(--gap) * 1.2) }
+.rail nav a {
+  padding: calc(10px + var(--density) * 2px);
+  color: var(--muted);
+  border-radius: var(--radius);
+}
+.rail nav a:hover, .rail nav a.active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.brand { font-weight: 800; letter-spacing: .16em }
+.brand small { display: block; color: var(--muted); font-size: 9px; margin-top: 5px }
+.main {
+  max-width: 1100px;
+  width: 100%;
+  padding: calc(36px + var(--gap)) calc(6% + var(--gap) * 0.4);
+  margin: auto;
+}
+.main:focus { outline: none }
+.eyebrow { color: var(--muted); font-size: 10px; letter-spacing: .15em }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: calc(18px + var(--density) * 3px);
+  border-radius: var(--radius-lg);
+  /* Per-preset motion: spacious presets get a slow transition,
+     compact presets don't. */
+  transition: background-color calc(0.2s * var(--density)) ease;
+}
+.grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: calc(12px + var(--gap) * 0.3) }
+.button {
+  background: var(--accent);
+  border: 0;
+  padding: calc(10px + var(--density) * 2px) calc(14px + var(--density) * 2px);
+  color: #10140c;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: var(--radius);
+  /* Compact presets get smaller min-height; spacious get more. */
+  min-height: calc(36px + var(--density) * 4px);
+}
+.muted { color: var(--muted) }
+
+@media (max-width: 700px) {
+  .rail { display: none }
+  .main { padding: 30px 20px }
+  .grid { grid-template-columns: 1fr }
+}
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0 }
+
+/* ======================================================================
+   Preset definitions
+   ====================================================================== */
+
+/* Whoop / Oura: dark, premium, sparse, large single metrics.
+   Spacious density, large radius, Manrope. */
+:root[data-theme="whoop-oura"] {
+  --bg: #090a0b; --surface: #111415; --line: #29302f;
+  --text: #eef2ed; --muted: #899390; --accent: #c7f36b;
+  --font: Manrope, system-ui, sans-serif;
+  --font-scale: 1.05;
+  --line-height: 1.55;
+  --radius: 6px;
+  --radius-lg: 8px;
+  --density: 1;
+  --gap: 32px;
+}
+
+/* Linear: sharp, monochrome, compact, keyboard-friendly. */
+:root[data-theme="linear"] {
+  --bg: #0d0d0f; --surface: #151518; --line: #2b2b31;
+  --text: #f5f5f5; --muted: #85858e; --accent: #8ab4ff;
+  --font: Inter, system-ui, sans-serif;
+  --font-scale: 0.95;
+  --line-height: 1.45;
+  --radius: 4px;
+  --radius-lg: 6px;
+  --density: -1;
+  --gap: 18px;
+}
+
+/* Duolingo: playful progress, streak emphasis, energetic. */
+:root[data-theme="duolingo"] {
+  --bg: #f4f7f4; --surface: #fff; --line: #d9e2dc;
+  --text: #18231e; --muted: #63756c; --accent: #48b86a;
+  --font: Nunito, system-ui, sans-serif;
+  --font-scale: 1.05;
+  --line-height: 1.55;
+  --radius: 16px;
+  --radius-lg: 20px;
+  --density: 1;
+  --gap: 28px;
+}
+
+/* Robinhood-inspired: clean fintech, confident type. */
+:root[data-theme="robinhood"] {
+  --bg: #f7f8f8; --surface: #ffffff; --line: #dfe6e2;
+  --text: #13231b; --muted: #687871; --accent: #00a86b;
+  --font: Inter, system-ui, sans-serif;
+  --font-scale: 1;
+  --line-height: 1.5;
+  --radius: 3px;
+  --radius-lg: 5px;
+  --density: 0;
+  --gap: 22px;
+}
+
+/* Arc-inspired: bold color fields, editorial cards, members-club. */
+:root[data-theme="arc"] {
+  --bg: #17132a; --surface: #241d3d; --line: #443666;
+  --text: #faf7ff; --muted: #aaa0c5; --accent: #ff8ebd;
+  --font: Manrope, system-ui, sans-serif;
+  --font-scale: 1.08;
+  --line-height: 1.6;
+  --radius: 18px;
+  --radius-lg: 24px;
+  --density: 1;
+  --gap: 36px;
+}
+
+/* Discord-inspired: dense channel/feed structure, strong nav. */
+:root[data-theme="discord"] {
+  --bg: #313338; --surface: #2b2d31; --line: #1e1f22;
+  --text: #f2f3f5; --muted: #b5bac1; --accent: #5865f2;
+  --font: Inter, system-ui, sans-serif;
+  --font-scale: 0.95;
+  --line-height: 1.45;
+  --radius: 8px;
+  --radius-lg: 10px;
+  --density: -1;
+  --gap: 16px;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *:before, *:after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important }
+}
+
+h1, h2, h3, p { max-width: 70ch }
 
 /* ----------------------------------------------------------------------
- * Reusable utility classes (extracted from inline styles).
- * The codebase still uses inline styles for the layout primitives
- * (margin, padding, grid, flex) because the original brand spec was
- * authored as 100+ pages of one-offs. The classes below cover the
- * patterns that appeared 10+ times across the codebase so the
- * recurring cases stay in one place. New pages can use either inline
- * styles or these classes; the goal is *consistency*, not a refactor
- * of the existing pages.
+ * Reusable utility classes
  * ---------------------------------------------------------------------- */
-
-/* The "row + stretched checkbox + label" pattern used in the
- * DailyCheckin, WeeklyCommitment, and MilestoneList components. */
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
-
-/* The "list item with a status badge" pattern used in the Devices,
- * Members, and Reports admin pages. */
-.list-item{display:flex;justify-content:space-between;align-items:center;padding:17px 0;border-bottom:1px solid var(--line)}
-
-/* The "narrow form field" pattern used in the login, verify, and
- * admin forms. */
-.input{padding:12px;background:var(--bg);border:1px solid var(--line);color:var(--text);width:100%}
-
-/* The "tertiary text button" pattern (Resend code, Load older, etc.). */
-.link-button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12}
-
-/* The "danger link button" pattern (retry on failed chat sends). */
-.link-button-danger{background:none;border:0;color:#ff8b82;cursor:pointer;padding:0;font-size:11}
-
-/* The "page footer" pattern (the DISCIPLINE brand mark on the
- * landing page). */
-.page-footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--line)}
-
-/* The "status message" pattern (Saving / Saved / Error). */
-.status-msg{margin-top:8px;font-size:12}
-.status-msg.ok{color:var(--accent)}
-.status-msg.err{color:#ff8b82}
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line) }
+.list-item { display: flex; justify-content: space-between; align-items: center; padding: 17px 0; border-bottom: 1px solid var(--line) }
+.input { padding: 12px; background: var(--bg); border: 1px solid var(--line); color: var(--text); width: 100% }
+.link-button { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 12 }
+.link-button-danger { background: none; border: 0; color: #ff8b82; cursor: pointer; padding: 0; font-size: 11 }
+.page-footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--line) }
+.status-msg { margin-top: 8px; font-size: 12 }
+.status-msg.ok { color: var(--accent) }
+.status-msg.err { color: #ff8b82 }
