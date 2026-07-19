@@ -15,8 +15,11 @@
 
 const CACHE = 'discipline-os-v2'
 const SHELL = ['/', '/login', '/offline.html']
+// Mirrors lib/offline/reports-cache.ts. PRD §7.6 says "Offline
+// cache of the latest configurable number; default 5 reports."
+// If you change the limit, change the matching lib value too.
 const REPORT_CACHE = 'discipline-reports-v2'
-const MAX_REPORT_ENTRIES = 16
+const MAX_REPORT_ENTRIES = 5
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

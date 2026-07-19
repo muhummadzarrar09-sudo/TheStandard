@@ -1,21 +1,24 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { REPORT_CACHE_NAME } from '../../lib/offline/reports-cache'
 
 type State = 'idle' | 'saving' | 'saved' | 'unsupported' | 'error'
 
+// Save the current report detail page to the offline cache. The
+// SW then serves the cached page on next visit when the network
+// is gone. The cache name + limit live in lib/offline/reports-cache
+// so the SW and this component share the same source of truth.
 export default function SaveOfflineButton({ reportId }: { reportId: string }) {
   const [state, setState] = useState<State>('idle')
 
-  // Read the saved state from cache on mount so the button reflects the
-  // current cached state even after a hard reload.
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!('caches' in window)) {
       setState('unsupported')
       return
     }
-    caches.open('discipline-reports-v2').then(async c => {
+    caches.open(REPORT_CACHE_NAME).then(async c => {
       const hit = await c.match(`/reports/${reportId}`)
       setState(hit ? 'saved' : 'idle')
     }).catch(() => setState('unsupported'))
@@ -28,16 +31,12 @@ export default function SaveOfflineButton({ reportId }: { reportId: string }) {
     }
     setState('saving')
     try {
-      // Fetch a public-friendly version of the report. For MVP, the
-      // current page URL is what we'll cache (browsers will request the
-      // current page on next offline visit and the SW will serve cached
-      // HTML or fall through to network).
       const res = await fetch(`/reports/${reportId}`, {
         credentials: 'same-origin',
-        headers: { 'accept': 'text/html' }
+        headers: { accept: 'text/html' }
       })
       if (!res.ok) throw new Error('fetch failed')
-      const cache = await caches.open('discipline-reports-v2')
+      const cache = await caches.open(REPORT_CACHE_NAME)
       await cache.put(`/reports/${reportId}`, res.clone())
       setState('saved')
     } catch {
@@ -48,7 +47,7 @@ export default function SaveOfflineButton({ reportId }: { reportId: string }) {
   async function remove() {
     if (typeof window === 'undefined' || !('caches' in window)) return
     try {
-      const cache = await caches.open('discipline-reports-v2')
+      const cache = await caches.open(REPORT_CACHE_NAME)
       await cache.delete(`/reports/${reportId}`)
       setState('idle')
     } catch {
