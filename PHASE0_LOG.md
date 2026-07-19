@@ -727,6 +727,99 @@ Tests: 423/423 passing (was 410, +13: 6 globals-css + 7 nav).
 
 ---
 
+# Phase 8 — PRD gaps round 2
+
+A third-pass PRD-vs-code audit (after Phase 7) found five more
+gaps the prior phases hadn't touched. Five sub-batches, one
+commit each.
+
+Scope:
+- 8a — leaderboard filters (PRD §7.3: all / team / week)
+- 8b — community pinned + source + version (PRD §7.5)
+- 8c — reports 5-default offline limit (PRD §7.6)
+- 8d — admin team-assignment UI (PRD §11)
+- 8e — admin schedule config UI (PRD §7.1)
+
+## Status
+
+### 8a — leaderboard filters
+- [x] `lib/domain/leaderboard-views.ts`: shared query helper
+  (`getLeaderboard(db, userId, cohortId, timezone, cohortStart, view)`).
+  Three views: `all` (cached projection), `team` (joins
+  `team_members` on the calling user's team; returns
+  `teamEmpty=true` when unassigned), `week` (ranks by
+  last-7-days check-in count clamped to cohort start, then
+  all-time tie-breakers).
+- [x] `app/api/leaderboard/route.ts`: accepts `?view=all|team|week`,
+  validates, delegates to the shared helper.
+- [x] `app/(app)/leaderboard/page.tsx`: SSR page reads the view
+  from `searchParams`, calls the helper directly (no more
+  route-from-page import hack), renders a 6th column for the
+  week view. Member's-own-rank surface stays correct.
+- [x] `components/leaderboard/LeaderboardViewTabs.tsx`: client
+  tab strip driving `?view=`. `aria-current` + `aria-selected`,
+  theme-token colors, preserves other query params.
+- [x] 14 new copy keys for the labels, columns, and the
+  tie-explanation caption.
+- [x] `tests/leaderboard-views.test.ts`: 8 cases (rank math,
+  week clamping, team-empty, view validation).
+
+### 8b — community pinned + source + version
+- [x] `supabase/migrations/023_community_version.sql`: adds
+  `version` (auto-bumps on title/body change) and `source_label`
+  columns to `community_posts`. Trigger mirrors the reports
+  version trigger.
+- [x] `lib/content/queries.ts`: types updated; selects
+  `source_label` and `version`.
+- [x] `app/(app)/community/page.tsx`: pinned items get a
+  `PINNED · OFFICIAL UPDATE` eyebrow; every card shows the
+  source (with both url and label, either optional) and
+  `v{n}` version.
+- [x] `tests/content-queries.test.ts`: 2 type-level guards.
+
+### 8c — reports 5-default offline limit
+- [x] `public/sw.js`: `MAX_REPORT_ENTRIES` 16 → 5 with a
+  comment pointing to the shared module.
+- [x] `lib/offline/reports-cache.ts` (new): `REPORT_CACHE_NAME`
+  + `DEFAULT_REPORT_OFFLINE_LIMIT`. The SW cannot import this
+  directly (different global scope); values are mirrored with
+  a comment to keep them in sync.
+- [x] `components/reports/SaveOfflineButton.tsx`: imports the
+  cache name from the shared module instead of hardcoding.
+- [x] `tests/reports-cache.test.ts`: 5 cases pinning cache
+  name, limit, SW mirror, versioned suffix.
+
+### 8d — admin team-assignment UI
+- [x] `app/api/admin/teams/route.ts` (new): GET (list teams
+  with joined members), POST (create + optional `memberIds`),
+  PATCH (update fields + replace roster). All routes require
+  server admin + cohort association. Validation mirrors the
+  rest of the admin surface (UUID checks, bounded strings,
+  enum check on status).
+- [x] `app/admin/teams/page.tsx` (new): three sub-components
+  — `NewTeamForm`, `TeamEditor`, `MemberPicker`. Inline
+  editing, archive-with-confirm, replace-roster pattern.
+- [x] `lib/nav.ts`: `ADMIN_RAIL` gets a Teams entry.
+- [x] `lib/copy.ts`: `rail.admin.teams` copy key.
+
+### 8e — admin schedule config UI
+- [x] `app/api/admin/schedule/route.ts` (new): GET returns
+  the current config (or sensible defaults with `exists=false`).
+  PUT validates `cutoffHour` is an integer 0..23, upserts the
+  row, bumps `schedule_version` on update so cached clients
+  can detect the change.
+- [x] `app/admin/schedule/page.tsx` (new): the admin UI.
+  Number input (0..23) with a 'current: HH:00' display and a
+  disabled Save button when the value matches the stored one.
+- [x] `lib/nav.ts`: `ADMIN_RAIL` gets a Schedule entry.
+- [x] `lib/copy.ts`: `rail.admin.schedule` copy key.
+
+Tests: 438/438 passing (was 423, +15: 8 leaderboard-views +
+2 content-queries + 5 reports-cache + round-trip entries for
+the new copy keys).
+
+---
+
 # Audit reference
 
 The original audit identified ~150 items split across 3 severity
