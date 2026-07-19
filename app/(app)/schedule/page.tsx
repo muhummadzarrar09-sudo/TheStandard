@@ -1,4 +1,7 @@
+import { createSupabaseServer } from '../../../lib/supabase/server'
+import { redirect } from 'next/navigation'
 import AppShell from '../../../components/ui/AppShell'
+import { getScheduleForCohort, getScheduleConfigForCohort } from '../../../lib/schedule-source'
 
 const RAIL = [
   { href: '/dashboard', key: 'rail.today' as const },
@@ -11,98 +14,83 @@ const RAIL = [
   { href: '/settings', key: 'rail.settings' as const }
 ]
 
-const TEMPLATES: Array<{
-  name: string
-  hours: string
-  status: 'Active' | 'Coming next' | 'Draft'
-  description: string
-}> = [
-  {
-    name: 'Cohort Standard',
-    hours: '05:00–21:00',
-    status: 'Active',
-    description: 'The default 30-day cohort structure. Wake at 05:00, three deep-work blocks, reflection at 19:00.'
-  },
-  {
-    name: 'Deep Work Intensive',
-    hours: '07:00–22:00',
-    status: 'Coming next',
-    description: 'A two-week intensive for founders past day 14. Two 4-hour deep blocks, fewer breaks, later wake.'
-  },
-  {
-    name: 'Recovery Variant',
-    hours: '07:30–22:30',
-    status: 'Draft',
-    description: 'For members who need to come back after missing 3+ days. Softer ramp, one deep block, no critical-block reminders.'
-  }
-]
+export const dynamic = 'force-dynamic'
 
-export default function Schedule() {
+export default async function Schedule() {
+  const db = await createSupabaseServer()
+  const { data: { user } } = await db.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await db
+    .from('profiles')
+    .select('cohort_id, timezone')
+    .eq('id', user.id)
+    .single()
+  const cohortId = profile?.cohort_id || null
+  const timezone = profile?.timezone || 'UTC'
+  const [schedule, config] = await Promise.all([
+    getScheduleForCohort(cohortId),
+    getScheduleConfigForCohort(cohortId)
+  ])
+
   return (
     <AppShell items={RAIL}>
       <p className="eyebrow">SCHEDULE ENGINE · LOCAL TIME</p>
-      <h1>Choose the structure.</h1>
+      <h1>Today's structure.</h1>
       <p className="muted">
-        Templates are cohort-controlled. Your current template is the active one; switching templates
-        is admin-controlled for the cohort and is not enabled in this release.
+        The schedule is defined by your cohort's template. Switching templates
+        is admin-controlled. Cutoff is {String(config.cutoffHour).padStart(2, '0')}:00 local time
+        (next day); required blocks not completed by then count as missed.
       </p>
       <section
         className="card"
         style={{ marginTop: 32 }}
-        aria-label="Available schedule templates"
+        aria-label="Your schedule"
       >
-        {TEMPLATES.map((tpl) => {
-          const isActive = tpl.status === 'Active'
-          return (
-            <div
-              key={tpl.name}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr auto',
-                gap: 20,
-                padding: '20px 0',
-                borderBottom: '1px solid var(--line)',
-                alignItems: 'start'
-              }}
-            >
-              <div>
-                <b style={{ fontSize: 16 }}>{tpl.name}</b>
-                <p className="muted" style={{ margin: '6px 0 0' }}>{tpl.hours}</p>
-                <p className="muted" style={{ margin: '10px 0 0', maxWidth: 540 }}>{tpl.description}</p>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+        {schedule.map(b => (
+          <div
+            key={b.key}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '90px 1fr auto',
+              gap: 20,
+              padding: '14px 0',
+              borderBottom: '1px solid var(--line)',
+              alignItems: 'start'
+            }}
+          >
+            <div>
+              <p className="eyebrow" style={{ margin: 0 }}>{b.start}{b.end ? `–${b.end}` : ''}</p>
+            </div>
+            <div>
+              <b>{b.label}</b>
+              <p className="muted" style={{ margin: '4px 0 0', fontSize: 11 }}>
+                {b.required ? 'Required' : 'Protected'}
+                {b.critical ? ' · Critical' : ''}
+              </p>
+            </div>
+            <div style={{ alignSelf: 'center' }}>
+              {b.critical ? (
                 <span
                   style={{
-                    color: isActive ? 'var(--accent)' : 'var(--muted)',
-                    fontSize: 12,
-                    letterSpacing: '.1em'
+                    background: 'var(--accent)',
+                    color: '#10140c',
+                    padding: '3px 8px',
+                    fontSize: 10,
+                    letterSpacing: '.1em',
+                    fontWeight: 700
                   }}
-                  aria-label={`Status: ${tpl.status}`}
+                  aria-label="Critical block"
                 >
-                  {tpl.status.toUpperCase()}
+                  CRITICAL
                 </span>
-                <button
-                  type="button"
-                  className="button"
-                  disabled={!isActive}
-                  aria-disabled={!isActive}
-                  aria-label={isActive ? `${tpl.name} is active` : `${tpl.name} is not available`}
-                  style={{
-                    background: isActive ? 'transparent' : 'var(--bg)',
-                    color: isActive ? 'var(--accent)' : 'var(--muted)',
-                    border: isActive ? '1px solid var(--accent)' : '1px solid var(--line)',
-                    cursor: isActive ? 'default' : 'not-allowed'
-                  }}
-                >
-                  {isActive ? 'Active' : 'Locked'}
-                </button>
-              </div>
+              ) : null}
             </div>
-          )
-        })}
+          </div>
+        ))}
       </section>
       <p className="muted" style={{ marginTop: 30, fontSize: 12 }}>
-        Adaptive scheduling (per-member schedule variation) is a paid-cohort roadmap item and is not part of the MVP.
+        Your timezone: {timezone}.
       </p>
     </AppShell>
   )

@@ -1,9 +1,9 @@
 import { createSupabaseServer } from '../../../lib/supabase/server'
 import { redirect } from 'next/navigation'
 import {
-  STANDARD_SCHEDULE,
   localDateInTimezone,
-  completionPercent
+  completionPercent,
+  type ScheduleBlock
 } from '../../../lib/domain'
 import { consecutiveDays } from '../../../lib/domain/streaks'
 import AppShell from '../../../components/ui/AppShell'
@@ -11,6 +11,7 @@ import TodayBlocks from '../../../components/schedule/TodayBlocks'
 import DailyCheckin from '../../../components/tracker/DailyCheckin'
 import WeeklyCommitment from '../../../components/tracker/WeeklyCommitment'
 import { t } from '../../../lib/copy'
+import { getScheduleForCohort } from '../../../lib/schedule-source'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,22 +55,23 @@ export default async function Dashboard() {
       )
     : 1
 
-  // Today's per-block completions (real-time, in-progress).
+  // Read the schedule from the canonical table (Phase 6a). Falls
+  // back to the hardcoded constant for a brand-new cohort without a
+  // config row.
+  const schedule = await getScheduleForCohort(profile?.cohort_id || null)
+
   const { data: completions } = await db
     .from('block_completions')
     .select('block_key')
     .eq('user_id', user.id)
     .eq('local_date', today)
   const doneKeys = new Set((completions || []).map(c => c.block_key))
-  const requiredTotal = STANDARD_SCHEDULE.filter(b => b.required).length
-  const criticalTotal = STANDARD_SCHEDULE.filter(b => b.critical).length
-  const requiredDone = STANDARD_SCHEDULE.filter(b => b.required && doneKeys.has(b.key)).length
-  const criticalDone = STANDARD_SCHEDULE.filter(b => b.critical && doneKeys.has(b.key)).length
-  const pct = completionPercent(STANDARD_SCHEDULE, doneKeys)
+  const requiredTotal = schedule.filter(b => b.required).length
+  const criticalTotal = schedule.filter(b => b.critical).length
+  const requiredDone = schedule.filter(b => b.required && doneKeys.has(b.key)).length
+  const criticalDone = schedule.filter(b => b.critical && doneKeys.has(b.key)).length
+  const pct = completionPercent(schedule, doneKeys)
 
-  // Streak: pull from the same signal the leaderboard uses
-  // (daily_checkins.completed = true) so the dashboard and leaderboard never
-  // disagree.
   const { data: checkins } = await db
     .from('daily_checkins')
     .select('local_date')
@@ -97,10 +99,10 @@ export default async function Dashboard() {
     return h * 60 + m
   }
   const next =
-    STANDARD_SCHEDULE
+    schedule
       .filter(b => b.required)
       .find(b => !doneKeys.has(b.key) && toMinutes(b.start) >= nowMinutes) ||
-    STANDARD_SCHEDULE.filter(b => b.required).find(b => !doneKeys.has(b.key))
+    schedule.filter(b => b.required).find(b => !doneKeys.has(b.key))
 
   return (
     <AppShell items={RAIL}>
@@ -158,7 +160,7 @@ export default async function Dashboard() {
           )}
         </section>
       </div>
-      <TodayBlocks initialDone={Array.from(doneKeys)} />
+      <TodayBlocks initialDone={Array.from(doneKeys)} schedule={schedule} />
       <WeeklyCommitment />
       <DailyCheckin />
     </AppShell>
