@@ -514,3 +514,132 @@ Scope:
 
 Tests: 377/377 passing (was 353, +24: 4 otp-secret + 10 chat-
 reconcile + 3 themes + 1 copy + 6 cn).
+
+---
+
+# Phase 6 — PRD gaps
+
+A second look at the actual PRD (§7.1, §7.4, §7.8, §8.1) found
+~15 features we shipped without. Five sub-batches, one commit each.
+
+Scope:
+- 6a — data-driven schedule + per-cohort cutoff config (PRD §7.1)
+- 6b — team progress log + chat unread counts (PRD §7.4)
+- 6c — 3-device login flow + device-id (PRD §6.5)
+- 6d — presets as real visual systems, not just colors (PRD §7.8)
+- 6e — server-side OTP lockout + resend cooldown (PRD §8.1)
+
+## Status
+
+### 6a — data-driven schedule
+- [x] `supabase/migrations/021_schedule_data_driven.sql`:
+  `cohort_schedule_config` (cutoff_hour + schedule_version per
+  cohort) and `daily_schedule_instances` (per-day row with
+  timezone + cutoff_at). Two functions:
+  `get_canonical_schedule_for_cohort` and
+  `resolve_daily_schedule_instance`. RLS for both.
+- [x] `lib/schedule-source.ts` + `lib/schedule-source-shared.ts`:
+  `getScheduleForCohort()` reads from the canonical table with
+  fallback to the hardcoded constant. `getScheduleConfigForCohort()`
+  reads the cutoff hour. `rowToBlock()` maps the canonical row
+  to the app's internal ScheduleBlock shape.
+- [x] `app/api/schedule/complete`: reads the schedule and
+  cutoff from the cohort's config. Calls
+  `resolve_daily_schedule_instance` on every completion.
+- [x] `app/(app)/dashboard`, `app/(app)/schedule`,
+  `components/schedule/TodayBlocks`: all read from
+  `getScheduleForCohort`. The schedule page now shows the actual
+  blocks with a CRITICAL pill for the four critical blocks.
+- [x] `tests/schedule-source.test.ts`: 4 cases for `rowToBlock`.
+
+### 6b — team progress log + chat unread
+- [x] `supabase/migrations/022_team_progress_categories.sql`:
+  adds `category` (enum: update/blocker/milestone/idea) and
+  `link_url` to `team_progress_logs`.
+- [x] `app/api/team-progress`: GET (list, newest first, with
+  author display name) and POST (create with body + category +
+  optional link). Validates teamId, body, category, and linkUrl.
+- [x] `app/api/team-unread`: GET (count messages newer than the
+  member's last-read marker, excluding their own) and POST
+  (mark-as-read).
+- [x] `components/team/TeamProgressLog.tsx`: client component
+  for posting + viewing. Form with body + category + optional
+  URL + post button. Reverse-chronological list.
+- [x] `components/team/TeamChat.tsx`: shows an unread badge in
+  the header, polls every 15s, auto-marks-read when the user
+  is at the bottom and a new message arrives.
+- [x] `tests/team-progress-validation.test.ts`: 11 cases locking
+  the validation rules.
+
+### 6c — 3-device login flow
+- [x] `lib/device-id.ts`: client-side device-id generator
+  (16 random bytes, base64url, prefixed dev-) persisted in
+  localStorage. Coarse device label from navigator.userAgent.
+- [x] `app/api/devices/register`: POST that creates a new
+  `device_sessions` row, or returns `{ needsRevoke: true,
+  sessions }` if the user is at MAX_DEVICES=2. Idempotent on
+  re-registration.
+- [x] `app/api/auth/device-revoke`: POST that marks a session
+  as revoked. Confirms the session belongs to the calling
+  user.
+- [x] `components/auth/DeviceRevokePicker.tsx`: the picker UI
+  shown on the verify page when `needsRevoke` is set.
+- [x] `app/(public)/verify/page.tsx`: after the OTP verifies,
+  the client calls `/api/devices/register`. If the response
+  is `needsRevoke`, the picker is rendered. On resolve, the
+  page navigates to /dashboard.
+- [x] `tests/device-id.test.ts`: 8 cases for the device-id
+  generator + the getDeviceLabel fingerprint.
+
+### 6d — presets as real visual systems
+- [x] `app/globals.css` (full rewrite): a token system with
+  palette (--bg/--accent/etc.), typography (--font/--font-scale
+  /--line-height), shape (--radius/--radius-lg), and density
+  (--density/--gap). Each preset overrides all tokens.
+  whoop-oura is dark + spacious + Manrope + large radius;
+  linear is dark + compact + Inter + tight; duolingo is
+  light + spacious + Nunito + very rounded; robinhood is
+  light + balanced + Inter + tight; arc is dark + spacious
+  + Manrope + very rounded; discord is dark + compact +
+  Inter + rounded.
+- [x] Components use the tokens via var() so a preset switch
+  is a single-attribute change. The rail width, main
+  padding, button min-height, and card transition duration
+  all derive from the tokens.
+
+### 6e — server-side OTP lockout + resend cooldown
+- [x] `lib/otp-lockout.ts`: per-email attempt counter with
+  sliding 10-minute window. 5 failed attempts triggers a
+  10-minute lockout; any attempt during the lockout returns
+  429 with retry-after. Case-insensitive. Successful
+  verification clears the bucket.
+- [x] `lib/otp-cooldown.ts`: per-email resend cooldown (30s).
+  A user can't flood the email provider by hammering the
+  resend button.
+- [x] `app/api/auth/verify-otp`: calls `checkLockout()`
+  before the Supabase verifyOtp. On a failed credential
+  check, calls `recordFailedAttempt()`. On a successful
+  check, calls `recordSuccessfulAttempt()`.
+- [x] `app/api/auth/send-code`: calls
+  `checkAndRecordResend()` before the token + nonce
+  validation. Returns 429 + retry-after if the email has had
+  a send in the last 30s.
+- [x] `tests/otp-lockout.test.ts`: 10 cases covering the
+  lockout + the cooldown.
+
+Tests: 410/410 passing (was 377, +33: 4 rowToBlock + 11 team-
+progress-validation + 8 device-id + 10 otp-lockout).
+
+---
+
+# Audit reference
+
+The original audit identified ~150 items split across 3 severity
+tiers. Phase 0 (10) + Phase 1 (17) + Phase 1.5 (3) = 30 done.
+Phase 2 Batch 1 (RLS) + Batch 2 (validation) + Batch 3
+(observability + security headers) + Batch 4 (a11y) + Batch 5
+(consistency) = ~70 more done. Phase 3 covered operational
+hardening. Phase 4 covered the 2-year-old request-otp bypass.
+Phase 5 covered leftover polish + operational + cosmetic. Phase
+6 covered the remaining PRD gaps. The codebase is now
+substantively aligned with the PRD.
