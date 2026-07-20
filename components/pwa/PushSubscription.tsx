@@ -5,11 +5,17 @@ import { createSupabaseBrowser } from '../../lib/supabase/browser'
 
 type State = 'idle' | 'working' | 'enabled' | 'unsupported' | 'denied' | 'ios-needs-install'
 
-function keyToBytes(key: string): Uint8Array {
+function keyToBytes(key: string): Uint8Array<ArrayBuffer> {
   const pad = '='.repeat((4 - (key.length % 4)) % 4)
   const base = (key + pad).replace(/-/g, '+').replace(/_/g, '/')
   const raw = atob(base)
-  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)))
+  // Use a fresh ArrayBuffer (not SharedArrayBuffer) so the type is
+  // Uint8Array<ArrayBuffer>, which is what PushSubscriptionOptions
+  // expects under TS 5.7+/7.0 with the stricter ArrayBufferLike split.
+  const buf = new ArrayBuffer(raw.length)
+  const view = new Uint8Array(buf)
+  for (let i = 0; i < raw.length; i++) view[i] = raw.charCodeAt(i)
+  return view
 }
 
 // Detect iOS Safari. iPadOS reports as Mac in newer versions when
