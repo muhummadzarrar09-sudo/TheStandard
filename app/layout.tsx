@@ -39,8 +39,8 @@ export const metadata = {
   }
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const nonce = getCspNonce() ?? undefined
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = (await getCspNonce()) ?? undefined
   return (
     <html lang="en">
       <head>

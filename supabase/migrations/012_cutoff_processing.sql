@@ -105,7 +105,8 @@ begin
             and bc.local_date = cutoff_anchor
             and bc.block_key = b.key
         );
-      get diagnostics rows_added = rows_added + row_count;
+      get diagnostics inserted_count = row_count;
+      rows_added := rows_added + inserted_count;
     end loop;
     -- Refresh the leaderboard for this cohort so the missed rows feed into
     -- the streak math immediately.

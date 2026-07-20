@@ -56,7 +56,7 @@ function makeDb(opts: { projection: any[]; teamMembers?: any[]; checkins?: any[]
         }
         return handle
       }
-      return { select() { return handle } }
+      return { select() { return { then(r: any) { return Promise.resolve({ data: [], error: null }).then(r) } } } }
     }
   } as any
 }

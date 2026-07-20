@@ -3,24 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { t } from '../../lib/copy'
-
-type RailKey =
-  | 'rail.today'
-  | 'rail.schedule'
-  | 'rail.tracker'
-  | 'rail.team'
-  | 'rail.teamChat'
-  | 'rail.leaderboard'
-  | 'rail.reports'
-  | 'rail.community'
-  | 'rail.settings'
-  | 'rail.profile'
-  | 'rail.admin.members'
-  | 'rail.admin.enrollment'
-  | 'rail.admin.analytics'
-  | 'rail.admin.reports'
-
-type RailItem = { href: string; key: RailKey }
+import type { RailItem } from '../../lib/nav'
 
 type Props = {
   items: RailItem[]

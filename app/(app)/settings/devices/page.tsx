@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import AppShell from '../../../components/ui/AppShell'
-import { MEMBER_RAIL } from '../../../lib/nav'
+import AppShell from '../../../../components/ui/AppShell'
+import { MEMBER_RAIL } from '../../../../lib/nav'
 
 type Device = {
   id: string

@@ -11,6 +11,10 @@
 -- below is belt and suspenders for the case where a future migration
 -- adds a permissive policy that the author forgot to scope.
 
+-- The original SELECT policy was already created in migration 002
+-- with the same name. Drop it first to avoid a 42710 duplicate
+-- policy error on a re-run.
+drop policy if exists leaderboard_read on public.leaderboard_projection;
 create policy leaderboard_read on public.leaderboard_projection
   for select to authenticated
   using (true);

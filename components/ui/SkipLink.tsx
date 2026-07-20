@@ -1,3 +1,5 @@
+'use client'
+
 // Skip link. Hidden until focused; the first thing keyboard users
 // encounter. PRD 18.10 accessibility QA: keyboard-only navigation
 // works on every page.

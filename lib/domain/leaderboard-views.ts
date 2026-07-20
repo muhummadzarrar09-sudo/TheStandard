@@ -74,7 +74,7 @@ async function leaderboardForAll(db: Db, cohortId: string, userId: string): Prom
   return {
     view: 'all',
     members,
-    yourRank: members.find(x => x.userId === userId)?.rank ?? null
+    yourRank: (members as LeaderboardMember[]).find(x => x.userId === userId)?.rank ?? null
   }
 }
 
@@ -97,7 +97,7 @@ async function leaderboardForTeam(db: Db, userId: string, cohortId: string): Pro
     .order('completion_pct', { ascending: false })
     .order('completed_days', { ascending: false })
     .order('joined_at', { ascending: true })
-  const members = (rows || []).map((r: any, i: number) => ({
+  const members: LeaderboardMember[] = (rows || []).map((r: any, i: number) => ({
     rank: i + 1,
     userId: r.user_id,
     displayName: r.profiles?.display_name || 'Member',

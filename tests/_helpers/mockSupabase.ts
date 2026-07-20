@@ -26,7 +26,7 @@ export function makeSupabaseMock(opts: SupabaseMockOptions = {}) {
     // We track the most recent chain (the most recent op + args) so
     // .single() / .maybeSingle() can return the last filtered row.
     const chain: { op: string; args: any[] }[] = []
-    const rows: any[] = (tables[table] || []).slice()
+    const rows: any[] = ((tables[table] as unknown as any[] | undefined) || []).slice()
 
     function applyFilters(): any[] {
       let out = rows
