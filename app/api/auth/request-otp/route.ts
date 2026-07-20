@@ -19,6 +19,7 @@
 // function).
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { isValidEmail, normalizeEmail, OTP_EXPIRY_SECONDS } from '../../../../lib/auth'
 import { createSupabaseServer } from '../../../../lib/supabase/server'
 import { withErrorHandling, withRequestIdHeader, withAccessLog } from '../../../../lib/api-handler'
@@ -98,7 +99,14 @@ const handler = withErrorHandling(
         return NextResponse.json({ ok: true, token: null })
       }
 
-      const db = await createSupabaseServer()
+      // This endpoint runs before authentication. Use the service-role
+      // client for the server-side enrollment lookup so anonymous RLS
+      // does not hide enrolled profiles. This key stays server-side.
+      const db = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false, autoRefreshToken: false } }
+      )
       const eligible = await isEligible(db, email)
       await auditRequest(db, email, eligible)
 
