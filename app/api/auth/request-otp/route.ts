@@ -25,6 +25,7 @@ import { createSupabaseServer } from '../../../../lib/supabase/server'
 import { withErrorHandling, withRequestIdHeader, withAccessLog } from '../../../../lib/api-handler'
 import { badRequest, toResponse } from '../../../../lib/api-errors'
 import { rateLimit } from '../../../../lib/rate-limit'
+import { assertServerEnv } from '../../../../lib/env'
 import {
   signOtpToken,
   verifyOtpToken,
@@ -78,6 +79,7 @@ async function auditRequest(db: Awaited<ReturnType<typeof createSupabaseServer>>
 const handler = withErrorHandling(
   withRequestIdHeader(
     withAccessLog(async (req: NextRequest): Promise<Response> => {
+      assertServerEnv()
       const limited = rateLimit(req, { key: 'request-otp', max: 5, windowMs: 10 * 60_000 })
       if (!limited.ok) {
         return new Response(JSON.stringify({ ok: false, error: 'Too many requests' }), {
@@ -118,8 +120,8 @@ const handler = withErrorHandling(
       const nonce = _newOtpNonce()
       const exp = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS
       const token = signOtpToken({ email, exp, nonce })
-      // Record the nonce so the verify-otp endpoint can detect reuse.
-      recordOtpNonce(nonce, exp * 1000)
+      // The nonce is recorded only after a successful OTP verification.
+      // Recording it here would make send-code reject the freshly issued token.
 
       return NextResponse.json({
         ok: true,

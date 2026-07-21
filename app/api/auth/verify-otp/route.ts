@@ -24,6 +24,7 @@ import { rateLimit } from '../../../../lib/rate-limit'
 import { normalizeEmail } from '../../../../lib/auth'
 import { verifyOtpToken, isOtpNonceUsed, recordOtpNonce } from '../../../../lib/otp-token'
 import { checkLockout, recordFailedAttempt, recordSuccessfulAttempt } from '../../../../lib/otp-lockout'
+import { assertServerEnv } from '../../../../lib/env'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,7 @@ const CODE_RE = /^\d{6}$/
 const handler = withErrorHandling(
   withRequestIdHeader(
     withAccessLog(async (req: NextRequest): Promise<Response> => {
+      assertServerEnv()
       const limited = rateLimit(req, { key: 'verify-otp', max: 20, windowMs: 10 * 60_000 })
       if (!limited.ok) {
         return new Response(JSON.stringify({ ok: false, error: 'Too many requests' }), {

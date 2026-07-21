@@ -25,6 +25,7 @@ import { rateLimit } from '../../../../lib/rate-limit'
 import { normalizeEmail } from '../../../../lib/auth'
 import { verifyOtpToken, isOtpNonceUsed } from '../../../../lib/otp-token'
 import { checkAndRecordResend } from '../../../../lib/otp-cooldown'
+import { assertServerEnv } from '../../../../lib/env'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,7 @@ const MAX_BODY = 1024
 const handler = withErrorHandling(
   withRequestIdHeader(
     withAccessLog(async (req: NextRequest): Promise<Response> => {
+      assertServerEnv()
       const limited = rateLimit(req, { key: 'send-code', max: 5, windowMs: 10 * 60_000 })
       if (!limited.ok) {
         return new Response(JSON.stringify({ ok: false }), {
@@ -81,23 +83,14 @@ const handler = withErrorHandling(
         { auth: { persistSession: false, autoRefreshToken: false } }
       )
 
-      // generateLink returns a magic link URL. The URL contains the
-      // OTP token in its query string (?token=...). The email template
-      // the admin has configured is responsible for either showing
-      // the full URL or extracting the token and showing it as a
-      // 6-digit code. Either way, the user receives the code and
-      // enters it on /verify.
-      // generateLink returns a magic link URL. The URL contains the
-      // OTP token in its query string (?token=...). The email template
-      // the admin has configured is responsible for either showing
-      // the full URL or extracting the token and showing it as a
-      // 6-digit code. Either way, the user receives the code and
-      // enters it on /verify.
-      const { data, error } = await admin.auth.admin.generateLink({
-        type: 'magiclink',
-        email
+      // Ask Supabase Auth to send its normal six-digit email OTP.
+      // generateLink() only creates a magic-link URL; it does not
+      // produce the six-digit code that /verify-otp expects.
+      const { error } = await admin.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false }
       })
-      if (error || !data) {
+      if (error) {
         return NextResponse.json({ ok: false, error: 'send_failed' }, { status: 502 })
       }
       return NextResponse.json({ ok: true })

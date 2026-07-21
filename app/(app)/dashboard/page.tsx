@@ -110,9 +110,9 @@ export default async function Dashboard() {
         <SyncStatusIndicator />
       </div>
       <div className="grid">
-        <section className="card" aria-label={t('today.completionEyebrow')}>
+        <section className="card card-primary" aria-label={t('today.completionEyebrow')}>
           <p className="eyebrow">{t('today.completionEyebrow')}</p>
-          <h2>
+          <h2 className="metric">
             {requiredDone}
             <span className="muted"> / {requiredTotal}</span>
           </h2>
@@ -138,7 +138,7 @@ export default async function Dashboard() {
             {criticalTotal > 0 ? ` · ${criticalDone} / ${criticalTotal} critical` : ''}
           </p>
         </section>
-        <section className="card" aria-label={t('today.upNextEyebrow')}>
+        <section className="card card-action" aria-label={t('today.upNextEyebrow')}>
           <p className="eyebrow">{t('today.upNextEyebrow')}</p>
           {next ? (
             <>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireServerAdmin } from '../../../../lib/admin/server-guard'
+import { requireServerAdminWithCohort } from '../../../../lib/admin/server-guard'
 import { isValidEmail } from '../../../../lib/auth'
-import { badRequest, toResponse, serverError } from '../../../../lib/api-errors'
+import { badRequest, forbidden, toResponse, serverError } from '../../../../lib/api-errors'
 import { withErrorHandling } from '../../../../lib/api-handler'
 import { isUuid, trimToRange, isBoundedString } from '../../../../lib/validation/schedule'
 
@@ -10,18 +10,19 @@ export const dynamic = 'force-dynamic'
 const DISPLAY_NAME_MAX = 80
 
 export const GET = withErrorHandling(async (): Promise<Response> => {
-  const { db } = await requireServerAdmin()
+  const { db, cohortId } = await requireServerAdminWithCohort()
   const { data, error } = await db
     .from('profiles')
     .select('id, email, display_name, cohort_id, role, access_start_at, access_end_at, teams!cohort_id(name)')
     .eq('role', 'member')
+    .eq('cohort_id', cohortId)
     .order('email', { ascending: true })
   if (error) return toResponse(serverError('Members unavailable'))
   return NextResponse.json({ members: data || [] })
 })
 
 export const POST = withErrorHandling(async (req: NextRequest): Promise<Response> => {
-  const { db, user } = await requireServerAdmin()
+  const { db, user, cohortId: adminCohortId } = await requireServerAdminWithCohort()
   let body: any
   try {
     body = await req.json()
@@ -49,20 +50,23 @@ export const POST = withErrorHandling(async (req: NextRequest): Promise<Response
     displayName = body.displayName.trim()
   }
 
-  let cohortId: string | null = null
-  if (body.cohortId !== undefined && body.cohortId !== null && body.cohortId !== '') {
-    if (typeof body.cohortId !== 'string' || !isUuid(body.cohortId)) {
-      return toResponse(badRequest('cohortId must be a UUID', { field: 'cohortId' }))
-    }
-    cohortId = body.cohortId
+  // Admins may only provision members into their own cohort. Never trust
+  // a client-supplied cohortId to widen the admin's authority.
+  if (body.cohortId !== undefined && body.cohortId !== null && body.cohortId !== '' &&
+      (typeof body.cohortId !== 'string' || !isUuid(body.cohortId) || body.cohortId !== adminCohortId)) {
+    return toResponse(forbidden('You can only manage members in your assigned cohort.'))
   }
+  const cohortId = adminCohortId
 
   // Preserve the existing role on update: only set role to 'member' on insert.
   const { data: existing } = await db
     .from('profiles')
-    .select('id, role')
+    .select('id, role, cohort_id')
     .eq('email', email)
     .maybeSingle()
+  if (existing && existing.cohort_id && existing.cohort_id !== adminCohortId) {
+    return toResponse(forbidden('This member belongs to another cohort.'))
+  }
   const insertRow: Record<string, unknown> = {
     email,
     display_name: displayName,

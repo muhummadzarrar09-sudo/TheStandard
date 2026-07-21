@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { t } from '../../lib/copy'
 import type { RailItem } from '../../lib/nav'
+import MobileNav from './MobileNav'
 
 type Props = {
   items: RailItem[]
@@ -44,6 +45,7 @@ export default function AppShell({ items, children }: Props) {
       <main className="main" id="main" tabIndex={-1}>
         {children}
       </main>
+      <MobileNav items={items} />
     </div>
   )
 }

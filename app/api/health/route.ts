@@ -1,5 +1,6 @@
 import { createSupabaseServer } from '../../../lib/supabase/server'
 import { withRequestIdHeader, withAccessLog } from '../../../lib/api-handler'
+import { getMissingServerEnv } from '../../../lib/env'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,6 +10,10 @@ const handler = withRequestIdHeader(async (): Promise<Response> => {
   const start = Date.now()
   const checks: { name: string; ok: boolean; ms: number; error?: string }[] = []
   let overallOk = true
+
+  const missingEnv = getMissingServerEnv()
+  checks.push({ name: 'configuration', ok: missingEnv.length === 0, ms: 0, ...(missingEnv.length ? { error: `missing: ${missingEnv.join(', ')}` } : {}) })
+  if (missingEnv.length) overallOk = false
 
   // 1. Supabase: a lightweight query that confirms reachability + auth.
   try {

@@ -64,6 +64,8 @@ a { color: inherit; text-decoration: none }
 /* The shell. The rail width and the main padding derive from
    --gap so the density preset scales them. */
 .shell { display: flex; min-height: 100vh }
+.skip-link { position: fixed; z-index: 100; top: 8px; left: 8px; transform: translateY(-160%); padding: 10px 14px; background: var(--accent); color: var(--accent-text); border-radius: var(--radius); font-weight: 700 }
+.skip-link:focus { transform: translateY(0); }
 .rail {
   width: calc(180px + var(--gap) * 2);
   border-right: 1px solid var(--line);
@@ -112,8 +114,69 @@ a { color: inherit; text-decoration: none }
 
 @media (max-width: 700px) {
   .rail { display: none }
-  .main { padding: 30px 20px }
+  .main { padding: 30px 20px calc(92px + env(safe-area-inset-bottom)) }
   .grid { grid-template-columns: 1fr }
+}
+
+.mobile-nav, .mobile-nav-sheet, .mobile-nav-backdrop { display: none }
+
+@media (max-width: 700px) {
+  .mobile-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(16px);
+  }
+  .mobile-nav-item {
+    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px 3px;
+    border: 0;
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 10px;
+    cursor: pointer;
+  }
+  .mobile-nav-item.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent) }
+  .mobile-nav-icon { min-height: 17px; font-size: 16px; line-height: 1 }
+  .mobile-nav-backdrop {
+    display: block;
+    position: fixed;
+    z-index: 31;
+    inset: 0;
+    border: 0;
+    background: rgb(0 0 0 / 45%);
+  }
+  .mobile-nav-sheet {
+    display: block;
+    position: fixed;
+    z-index: 32;
+    left: 12px;
+    right: 12px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    max-height: min(60vh, 460px);
+    overflow: auto;
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 18px 50px rgb(0 0 0 / 35%);
+  }
+  .mobile-nav-sheet-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 10px; border-bottom: 1px solid var(--line); margin-bottom: 6px }
+  .mobile-nav-sheet .mobile-nav-item { flex-direction: row; justify-content: flex-start; gap: 12px; width: 100%; padding: 10px 12px; font-size: 13px }
 }
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0 }
@@ -233,6 +296,35 @@ a { color: inherit; text-decoration: none }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+/* ----------------------------------------------------------------------
+ * Shared interaction states — Batch 3 visual polish
+ * ---------------------------------------------------------------------- */
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent }
+button, a { transition: background-color calc(.16s * var(--motion-scale)) ease, color calc(.16s * var(--motion-scale)) ease, border-color calc(.16s * var(--motion-scale)) ease, transform calc(.16s * var(--motion-scale)) ease, opacity calc(.16s * var(--motion-scale)) ease }
+.button:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px) }
+.button:active:not(:disabled) { transform: translateY(0) }
+.button:disabled { cursor: not-allowed; opacity: .55; filter: saturate(.6) }
+.card { box-shadow: 0 1px 0 rgb(255 255 255 / 3%); }
+.card-action:hover, .card:has(a:hover), .card:has(button:hover) { border-color: color-mix(in srgb, var(--accent) 28%, var(--line)); }
+.input, select, textarea { border-radius: var(--radius); font: inherit; transition: border-color calc(.16s * var(--motion-scale)) ease, box-shadow calc(.16s * var(--motion-scale)) ease, background-color calc(.16s * var(--motion-scale)) ease }
+.input:hover, select:hover, textarea:hover { border-color: color-mix(in srgb, var(--text) 35%, var(--line)) }
+.input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); outline: none }
+.status-msg { min-height: 18px }
+.status-msg.err { padding: 9px 11px; border: 1px solid color-mix(in srgb, var(--danger) 42%, var(--line)); background: color-mix(in srgb, var(--danger) 9%, transparent); border-radius: var(--radius) }
+.status-msg.ok { padding: 9px 11px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); background: color-mix(in srgb, var(--accent) 8%, transparent); border-radius: var(--radius) }
+
+/* Consistent metric and action hierarchy. */
+.metric { font-variant-numeric: tabular-nums; letter-spacing: -.03em }
+.card-primary { border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, var(--surface)), var(--surface) 55%) }
+.card-action { position: relative; overflow: hidden }
+.card-action::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent); }
+.skeleton { background: linear-gradient(90deg, var(--surface), color-mix(in srgb, var(--text) 9%, var(--surface)), var(--surface)); background-size: 220% 100%; animation: skeleton-shimmer 1.3s ease-in-out infinite; border-radius: var(--radius) }
+@keyframes skeleton-shimmer { 0% { background-position: 200% 0 } 100% { background-position: -20% 0 } }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none }
 }
 
 @media (prefers-reduced-motion: reduce) {

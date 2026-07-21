@@ -31,6 +31,7 @@ export default function Login() {
       if (!otp.ok) throw new Error('send_failed')
       sessionStorage.setItem('discipline-login-email', normalized)
       sessionStorage.setItem('discipline-login-token', token)
+      sessionStorage.setItem('discipline-login-token-at', String(Date.now()))
       router.push('/verify')
     } catch {
       setError(t('login.error'))

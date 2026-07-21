@@ -19,13 +19,27 @@ export default function Verify() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
+  const [secondsLeft, setSecondsLeft] = useState(300)
   const [deviceRevokeSessions, setDeviceRevokeSessions] = useState<Session[] | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     setEmail(sessionStorage.getItem('discipline-login-email') || '')
     setToken(sessionStorage.getItem('discipline-login-token') || '')
+    const started = Number(sessionStorage.getItem('discipline-login-token-at')) || Date.now()
+    sessionStorage.setItem('discipline-login-token-at', String(started))
+    const update = () => setSecondsLeft(Math.max(0, 300 - Math.floor((Date.now() - started) / 1000)))
+    update()
+    const timer = window.setInterval(update, 1000)
+    return () => window.clearInterval(timer)
   }, [])
+
+  function changeEmail() {
+    sessionStorage.removeItem('discipline-login-email')
+    sessionStorage.removeItem('discipline-login-token')
+    sessionStorage.removeItem('discipline-login-token-at')
+    router.replace('/login')
+  }
 
   async function registerDevice(): Promise<{ ok: true } | { ok: false; error: string }> {
     const deviceId = getOrCreateDeviceId()
@@ -158,6 +172,11 @@ export default function Verify() {
             <p className="muted">
               {t('verify.subtitle', 'en', { email: email || 'your email' })}
             </p>
+            <p className="status-msg" role="status">
+              {secondsLeft > 0
+                ? `Code expires in ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`
+                : 'This code has expired. Request a new one.'}
+            </p>
             <form onSubmit={submit} noValidate>
               <label
                 htmlFor="code"
@@ -191,7 +210,7 @@ export default function Verify() {
                   {info}
                 </p>
               )}
-              <button className="button" type="submit" disabled={busy}>
+              <button className="button" type="submit" disabled={busy || secondsLeft === 0}>
                 {busy ? t('verify.verifying') : t('verify.submit')}
               </button>
             </form>
@@ -208,6 +227,9 @@ export default function Verify() {
               }}
             >
               {t('verify.resend')}
+            </button>
+            <button type="button" className="link-button" onClick={changeEmail} style={{ display: 'block', margin: '12px auto 0' }}>
+              Use a different email
             </button>
           </>
         )}
