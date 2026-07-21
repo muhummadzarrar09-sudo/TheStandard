@@ -102,7 +102,7 @@ export default function Enrollment() {
           </h2>
           <p className="muted">
             {isOpen
-              ? 'Eligible emails may request a six-digit code.'
+              ? 'Eligible emails may request a magic sign-in link.'
               : 'No new signup OTPs will be issued. Existing members retain access.'}
           </p>
           <button

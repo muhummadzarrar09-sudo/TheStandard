@@ -13,8 +13,8 @@
 //
 // Versioning: bumping CACHE invalidates everything.
 
-const CACHE = 'discipline-os-v2'
-const SHELL = ['/', '/login', '/offline.html']
+const CACHE = 'discipline-os-v3'
+const SHELL = ['/', '/login', '/verify', '/offline.html']
 // Mirrors lib/offline/reports-cache.ts. PRD §7.6 says "Offline
 // cache of the latest configurable number; default 5 reports."
 // If you change the limit, change the matching lib value too.

@@ -1,15 +1,15 @@
-// Send the OTP code to the user's email. Gated by the email-bound
-// token minted by /api/auth/request-otp. Internally calls
-// supabase.auth.admin.generateLink, which produces both the magic
-// link and a one-time password (token) that the user can either click
-// or type. We extract the token from the link and (in production)
-// instruct the email template to display it.
+// Send the magic-link sign-in email. Gated by the email-bound
+// token minted by /api/auth/request-otp. Uses Supabase's
+// signInWithOtp with an emailRedirectTo, which sends the user
+// an email containing a one-click magic link that redirects
+// back to /verify with the session tokens in the URL hash.
 //
-// Why a custom server-side send: we want the OTP code to be sent
-// through Supabase's email infrastructure (so the format and deliver-
-// ability are consistent with the rest of the app), but we don't want
-// the client to be able to call generateLink directly. The gate token
-// is the proof that the client has been pre-approved.
+// Why a custom server-side send: we want the magic-link email
+// to be sent through Supabase's email infrastructure (so the
+// format and deliverability are consistent with the rest of the
+// app), but we don't want the client to call signInWithOtp
+// directly. The gate token is proof that the client has been
+// pre-approved by the eligibility check in /request-otp.
 
 import { NextRequest, NextResponse } from 'next/server'
 // We import @supabase/supabase-js directly (not via @supabase/ssr) to
@@ -83,9 +83,10 @@ const handler = withErrorHandling(
         { auth: { persistSession: false, autoRefreshToken: false } }
       )
 
-      // Ask Supabase Auth to send its normal six-digit email OTP.
-      // generateLink() only creates a magic-link URL; it does not
-      // produce the six-digit code that /verify-otp expects.
+      // Ask Supabase Auth to send a magic-link email. The user
+      // clicks the link in the email and is redirected back to
+      // /verify with the session tokens in the URL hash. The
+      // verify page then picks up the session via getSession().
       const { error } = await admin.auth.signInWithOtp({
         email,
         options: {

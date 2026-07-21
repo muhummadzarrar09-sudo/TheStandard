@@ -32,11 +32,36 @@ const themeBootstrap = `
 export const metadata = {
   title: 'Discipline OS — 30-day execution system',
   description: 'A 30-day execution system for disciplined daily work, team accountability, and startup progress.',
+  manifest: '/manifest.json',
   openGraph: {
     title: 'Discipline OS — 30-day execution system',
     description: 'A 30-day execution system for disciplined daily work, team accountability, and startup progress.',
     type: 'website'
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Discipline OS'
+  },
+  formatDetection: {
+    telephone: false
+  },
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'mobile-web-app-capable': 'yes'
   }
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#090a0b' },
+    { media: '(prefers-color-scheme: light)', color: '#f4f7f4' }
+  ]
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
