@@ -11,7 +11,7 @@
 // attacker cannot enumerate codes.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServer } from '../../../../lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 // We import @supabase/supabase-js directly to use verifyOtp on the
 // service-role client. The supabase-js `verifyOtp` requires the
 // service role because the client is doing the OTP comparison
@@ -116,11 +116,35 @@ const handler = withErrorHandling(
       recordSuccessfulAttempt(email)
 
       // We have a session. Now we need to write the auth cookies so the
-      // user's subsequent requests are authenticated. We do this by
-      // asking the Supabase server client to set the cookies via its
-      // setAll helper. We pass the session in as a "magic" event by
-      // re-issuing a signInWithSession call.
-      const db = await createSupabaseServer()
+      // user's subsequent requests are authenticated.
+      //
+      // CRITICAL: In Route Handlers, cookies() from next/headers does NOT
+      // automatically transfer cookies to the response. We must build the
+      // response first, then create a Supabase client that sets cookies
+      // directly on the response object.
+      
+      // Build the response FIRST
+      const successResponse = NextResponse.json({ ok: true })
+
+      // Create a Supabase client that sets cookies on the RESPONSE
+      // instead of the request cookie store
+      const db = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return req.cookies.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                successResponse.cookies.set(name, value, options)
+              })
+            }
+          }
+        }
+      )
+
       // The simplest way: use the SSR client's setSession, which
       // writes the auth cookie through the cookie adapter.
       const { error: setErr } = await db.auth.setSession({
@@ -131,7 +155,7 @@ const handler = withErrorHandling(
         return NextResponse.json({ ok: false, error: 'session_set_failed' }, { status: 500 })
       }
 
-      return NextResponse.json({ ok: true })
+      return successResponse
     })
   )
 )

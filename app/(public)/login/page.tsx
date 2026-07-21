@@ -24,7 +24,13 @@ export default function Login() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email: normalized })
       })
-      if (!gate.ok) throw new Error('gate')
+      if (!gate.ok) {
+        const retryAfter = gate.headers.get('retry-after')
+        if (gate.status === 429 && retryAfter) {
+          throw new Error(`Too many attempts. Please wait ${retryAfter} seconds before trying again.`)
+        }
+        throw new Error('gate')
+      }
       const { token } = await gate.json()
       if (!token) throw new Error('not_eligible')
       const otp = await fetch('/api/auth/send-code', {
@@ -32,13 +38,23 @@ export default function Login() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email: normalized, token })
       })
-      if (!otp.ok) throw new Error('send_failed')
+      if (!otp.ok) {
+        const retryAfter = otp.headers.get('retry-after')
+        if (otp.status === 429 && retryAfter) {
+          throw new Error(`Too many attempts. Please wait ${retryAfter} seconds before trying again.`)
+        }
+        throw new Error('send_failed')
+      }
       sessionStorage.setItem('discipline-login-email', normalized)
       sessionStorage.setItem('discipline-login-token', token)
       sessionStorage.setItem('discipline-login-token-at', String(Date.now()))
       router.push('/verify')
-    } catch {
-      setError(t('login.error'))
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('Too many attempts')) {
+        setError(err.message)
+      } else {
+        setError(t('login.error'))
+      }
     } finally {
       setBusy(false)
     }

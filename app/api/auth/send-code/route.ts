@@ -85,13 +85,22 @@ const handler = withErrorHandling(
 
       // Ask Supabase Auth to send a magic-link email. The user
       // clicks the link in the email and is redirected back to
-      // /verify with the session tokens in the URL hash. The
-      // verify page then picks up the session via getSession().
+      // /auth/callback with a short-lived code (PKCE flow).
+      // The callback route exchanges the code for a session
+      // server-side, so no tokens ever appear in the URL.
+      //
+      // Build the redirect URL from the request. In production on
+      // Vercel, req.url has the correct hostname. In development,
+      // it's localhost. We use the NEXT_PUBLIC_SITE_URL env var
+      // as a fallback for custom domains or reverse proxies.
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin
+      const redirectTo = new URL('/auth/callback', baseUrl).toString()
+      
       const { error } = await admin.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: new URL('/verify', req.url).toString()
+          emailRedirectTo: redirectTo
         }
       })
       if (error) {
