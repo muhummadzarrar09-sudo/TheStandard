@@ -88,7 +88,10 @@ const handler = withErrorHandling(
       // produce the six-digit code that /verify-otp expects.
       const { error } = await admin.auth.signInWithOtp({
         email,
-        options: { shouldCreateUser: false }
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: new URL('/verify', req.url).toString()
+        }
       })
       if (error) {
         return NextResponse.json({ ok: false, error: 'send_failed' }, { status: 502 })
