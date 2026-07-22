@@ -23,6 +23,7 @@ import { withErrorHandling, withRequestIdHeader, withAccessLog } from '../../../
 import { badRequest, toResponse } from '../../../../lib/api-errors'
 import { rateLimit } from '../../../../lib/rate-limit'
 import { normalizeEmail } from '../../../../lib/auth'
+import { generatePKCEParams } from '../../../../lib/auth/pkce'
 import { verifyOtpToken, isOtpNonceUsed } from '../../../../lib/otp-token'
 import { checkAndRecordResend } from '../../../../lib/otp-cooldown'
 import { assertServerEnv } from '../../../../lib/env'
@@ -93,20 +94,37 @@ const handler = withErrorHandling(
       // Vercel, req.url has the correct hostname. In development,
       // it's localhost. We use the NEXT_PUBLIC_SITE_URL env var
       // as a fallback for custom domains or reverse proxies.
+      // Generate PKCE params for secure magic-link flow
+      const { codeVerifier, codeChallenge } = await generatePKCEParams()
+
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin
       const redirectTo = new URL('/auth/callback', baseUrl).toString()
-      
+
+      // Build response first so we can set cookies on it
+      const response = NextResponse.json({ ok: true })
+      response.cookies.set('sb-code-verifier', codeVerifier, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 600,
+        path: '/'
+      })
+
       const { error } = await admin.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: redirectTo
+          emailRedirectTo: redirectTo,
+          data: {
+            code_challenge: codeChallenge,
+            code_challenge_method: 'S256'
+          }
         }
       })
       if (error) {
         return NextResponse.json({ ok: false, error: 'send_failed' }, { status: 502 })
       }
-      return NextResponse.json({ ok: true })
+      return response
     })
   )
 )

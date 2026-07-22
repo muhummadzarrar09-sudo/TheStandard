@@ -30,13 +30,19 @@ export async function GET(request: NextRequest) {
   // Handle errors from Supabase
   if (error) {
     console.error('Auth callback error:', { error, errorDescription })
-    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(errorDescription || error)}`)
+    const errorUrl = new URL(`${origin}/login`)
+    errorUrl.searchParams.set('error', encodeURIComponent(errorDescription || error))
+    if (next) errorUrl.searchParams.set('next', next)
+    return NextResponse.redirect(errorUrl.toString())
   }
 
   // No code provided — invalid callback
   if (!code) {
     console.error('Auth callback: no code provided')
-    return NextResponse.redirect(`${origin}/login?error=no_code`)
+    const noCodeUrl = new URL(`${origin}/login`)
+    noCodeUrl.searchParams.set('error', 'no_code')
+    if (next) noCodeUrl.searchParams.set('next', next)
+    return NextResponse.redirect(noCodeUrl.toString())
   }
 
   // Create Supabase server client that sets cookies on the response
@@ -67,8 +73,14 @@ export async function GET(request: NextRequest) {
 
   if (exchangeError) {
     console.error('Auth callback: code exchange failed', exchangeError)
-    return NextResponse.redirect(`${origin}/login?error=exchange_failed`)
+    const failUrl = new URL(`${origin}/login`)
+    failUrl.searchParams.set('error', 'exchange_failed')
+    if (next) failUrl.searchParams.set('next', next)
+    return NextResponse.redirect(failUrl.toString())
   }
+
+  // Delete the PKCE code verifier cookie after successful exchange
+  response.cookies.delete('sb-code-verifier')
 
   // Success! Cookies are set on the response, redirect to dashboard
   return response

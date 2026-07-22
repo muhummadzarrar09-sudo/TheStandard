@@ -107,11 +107,14 @@ export default function WeeklyCommitment() {
               aria-label={`Mark "${c.title}" ${done ? 'incomplete' : 'complete'}`}
               onClick={() => toggle(c)}
               style={{
-                padding: '5px 9px',
+                padding: '6px 10px',
                 background: done ? 'var(--accent)' : 'transparent',
                 color: done ? 'var(--bg)' : 'var(--accent)',
-                border: '1px solid var(--accent)',
-                cursor: 'pointer'
+                border: '2px solid var(--accent)',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                lineHeight: 1
               }}
             >
               {done ? '✓' : '○'}

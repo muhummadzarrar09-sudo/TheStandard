@@ -71,7 +71,7 @@ export default function DailyCheckin() {
         <p className="muted" role="status" style={{ marginTop: 18 }}>Loading today&apos;s check-in…</p>
       ) : (
         <>
-          <label style={{ display: 'flex', gap: 10, alignItems: 'center', margin: '18px 0' }}>
+          <label style={{ display: 'flex', gap: 10, alignItems: 'center', margin: '18px 0', cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={completed}

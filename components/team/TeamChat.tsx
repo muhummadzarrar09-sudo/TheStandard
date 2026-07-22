@@ -283,11 +283,12 @@ export default function TeamChat({ teamId }: { teamId: string }) {
               aria-label={isOwn ? t('chat.ariaYouAt', 'en', { time }) : t('chat.ariaTeammateAt', 'en', { time })}
               style={{
                 padding: 12,
-                background: isOwn ? 'color-mix(in srgb, var(--accent) 12%, var(--bg))' : 'var(--bg)',
+                background: 'color-mix(in srgb, var(--accent) 12%, var(--bg))',
                 border: '1px solid var(--line)',
-                borderRadius: 4,
+                borderRadius: 6,
                 marginBottom: 6,
-                opacity: m.delivery === 'failed' ? 0.7 : 1
+                opacity: m.delivery === 'failed' ? 0.7 : 1,
+                transition: 'opacity 0.2s ease'
               }}
             >
               <p style={{ margin: 0 }}>{m.body}</p>

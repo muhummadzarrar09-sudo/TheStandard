@@ -77,6 +77,7 @@ export default function TodayBlocks({ initialDone = [], schedule }: Props) {
             onClick={() => toggle(b.key)}
             disabled={done.includes(b.key)}
             aria-label={`Complete ${b.label}`}
+            style={{ transition: 'all 0.2s ease' }}
           >
             {done.includes(b.key) ? '✓' : 'Complete'}
           </button>

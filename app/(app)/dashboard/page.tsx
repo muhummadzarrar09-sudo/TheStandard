@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
 export default async function Dashboard() {
   const db = await createSupabaseServer()
   const { data: { user } } = await db.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/login?next=%2Fdashboard')
 
   const { data: profile } = await db
     .from('profiles')
@@ -138,7 +138,7 @@ export default async function Dashboard() {
             {criticalTotal > 0 ? ` · ${criticalDone} / ${criticalTotal} critical` : ''}
           </p>
         </section>
-        <section className="card card-action" aria-label={t('today.upNextEyebrow')}>
+        <section className="card card-action" style={{ marginTop: 15 }} aria-label={t('today.upNextEyebrow')}>
           <p className="eyebrow">{t('today.upNextEyebrow')}</p>
           {next ? (
             <>

@@ -85,14 +85,18 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/profile')
 
   if (protectedPath && !user) {
-    const r = NextResponse.redirect(new URL('/login', request.url))
+    const url = new URL('/login', request.url)
+    url.searchParams.set('next', path)
+    const r = NextResponse.redirect(url)
     r.headers.set(REQUEST_ID_HEADER, requestId)
     r.headers.set(CSP_NONCE_HEADER, nonce)
     r.headers.set('Content-Security-Policy', csp)
     return r
   }
   if (path.startsWith('/admin') && !user) {
-    const r = NextResponse.redirect(new URL('/login', request.url))
+    const url = new URL('/login', request.url)
+    url.searchParams.set('next', path)
+    const r = NextResponse.redirect(url)
     r.headers.set(REQUEST_ID_HEADER, requestId)
     r.headers.set(CSP_NONCE_HEADER, nonce)
     r.headers.set('Content-Security-Policy', csp)
