@@ -85,9 +85,9 @@ const handler = withErrorHandling(
 
       // Ask Supabase Auth to send a magic-link email. The user
       // clicks the link in the email and is redirected back to
-      // /auth/callback with a short-lived code (PKCE flow).
-      // The callback route exchanges the code for a session
-      // server-side, so no tokens ever appear in the URL.
+      // /auth/callback with tokens in the URL hash fragment.
+      // The callback page (client-side) extracts the tokens and
+      // sends them to the server to set HTTP-only cookies.
       //
       // Build the redirect URL from the request. In production on
       // Vercel, req.url has the correct hostname. In development,
