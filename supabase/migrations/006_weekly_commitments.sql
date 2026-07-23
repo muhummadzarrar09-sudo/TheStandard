@@ -1,6 +1,0 @@
-create table if not exists public.weekly_commitments(id uuid primary key default gen_random_uuid(),cohort_id uuid not null references public.cohorts(id) on delete cascade,cohort_week int not null,title text not null,description text not null,active boolean not null default true,unique(cohort_id,cohort_week));
-create table if not exists public.user_weekly_commitments(user_id uuid not null references auth.users(id) on delete cascade,commitment_id uuid not null references public.weekly_commitments(id) on delete cascade,completed boolean not null default false,note text,updated_at timestamptz not null default now(),primary key(user_id,commitment_id));
-alter table public.weekly_commitments enable row level security;alter table public.user_weekly_commitments enable row level security;
-create policy weekly_commitments_read on public.weekly_commitments for select to authenticated using(active=true or public.is_admin());
-create policy user_commitments_self on public.user_weekly_commitments for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());
-create policy weekly_commitments_admin on public.weekly_commitments for all to authenticated using(public.is_admin()) with check(public.is_admin());

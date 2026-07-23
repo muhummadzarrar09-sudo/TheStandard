@@ -1,84 +1,20 @@
-import './globals.css'
-import { ThemeProvider } from '../themes/theme-provider'
-import { presets } from '../themes'
-import ServiceWorkerRegistration from '../components/pwa/ServiceWorkerRegistration'
-import CsrfBootstrap from '../components/pwa/CsrfBootstrap'
-import SkipLink from '../components/ui/SkipLink'
-import { getCspNonce } from '../lib/csp-nonce'
+import type { Metadata } from "next";
 
-// Inline script that runs before React hydration and sets the data-theme
-// attribute on <html> from localStorage. Prevents the flash of default
-// theme on light themes (duolingo, robinhood) when a user reloads the
-// page.
-//
-// The script carries the per-request CSP nonce so it runs under a
-// strict (no-'unsafe-inline') policy. In dev the nonce is also set but
-// the policy additionally allows 'unsafe-inline' for HMR.
-//
-// The allowed list is built from `themes` at module-load so the
-// bootstrap and the provider can never drift.
-const themeBootstrap = `
-(function () {
-  try {
-    var t = localStorage.getItem('discipline-theme');
-    var allowed = ${JSON.stringify(presets)};
-    if (t && allowed.indexOf(t) !== -1) {
-      document.documentElement.dataset.theme = t;
-    }
-  } catch (e) {}
-})();
-`
+export const metadata: Metadata = {
+  title: "The Standard — Discipline OS",
+  description: "A 30-day execution system. Private, paid, structured.",
+};
 
-export const metadata = {
-  title: 'Discipline OS — 30-day execution system',
-  description: 'A 30-day execution system for disciplined daily work, team accountability, and startup progress.',
-  manifest: '/manifest.json',
-  openGraph: {
-    title: 'Discipline OS — 30-day execution system',
-    description: 'A 30-day execution system for disciplined daily work, team accountability, and startup progress.',
-    type: 'website'
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'Discipline OS'
-  },
-  formatDetection: {
-    telephone: false
-  },
-  other: {
-    'apple-mobile-web-app-capable': 'yes',
-    'mobile-web-app-capable': 'yes'
-  }
-}
-
-export const viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#090a0b' },
-    { media: '(prefers-color-scheme: light)', color: '#f4f7f4' }
-  ]
-}
-
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const nonce = (await getCspNonce()) ?? undefined
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <head>
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
-      </head>
-      <body>
-        <SkipLink />
-        <ThemeProvider>
-          <CsrfBootstrap />
-          <ServiceWorkerRegistration />
-          {children}
-        </ThemeProvider>
+      <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", background: "#fafafa" }}>
+        {children}
       </body>
     </html>
-  )
+  );
 }

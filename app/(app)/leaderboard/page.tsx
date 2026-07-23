@@ -1,151 +1,74 @@
-import { redirect } from 'next/navigation'
-import { createSupabaseServer } from '../../../lib/supabase/server'
-import MetricCard from '../../../components/ui/MetricCard'
-import EmptyState from '../../../components/ui/EmptyState'
-import AppShell from '../../../components/ui/AppShell'
-import LeaderboardViewTabs from '../../../components/leaderboard/LeaderboardViewTabs'
-import { t } from '../../../lib/copy'
-import { MEMBER_RAIL } from '../../../lib/nav'
-import { getLeaderboard, isLeaderboardView, type LeaderboardView } from '../../../lib/domain/leaderboard-views'
+import { createClient } from "@/lib/supabase/server";
 
-export const dynamic = 'force-dynamic'
+export default async function LeaderboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default async function Leaderboard(props: { searchParams: Promise<{ view?: string }> }) {
-  const { view: viewParam } = await props.searchParams
-  const view: LeaderboardView = isLeaderboardView(viewParam) ? viewParam : 'all'
+  if (!user) return null;
 
-  const db = await createSupabaseServer()
-  const { data: { user } } = await db.auth.getUser()
-  if (!user) redirect('/login')
+  // Get the user's cohort
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("cohort_id")
+    .eq("id", user.id)
+    .single();
 
-  const { data: profile } = await db
-    .from('profiles')
-    .select('cohort_id, timezone, cohorts!inner(start_at)')
-    .eq('id', user.id)
-    .single()
-  const cohortId = profile?.cohort_id
-  const cohort = profile?.cohorts
-    ? (Array.isArray(profile.cohorts) ? profile.cohorts[0] : profile.cohorts)
-    : null
-  const timezone = profile?.timezone || 'UTC'
-
-  if (!cohortId) {
-    return (
-      <AppShell items={MEMBER_RAIL}>
-        <p className="eyebrow">{t('rail.leaderboard')}</p>
-        <h1>{t('leaderboard.heading')}</h1>
-        <EmptyState
-          eyebrow="NOT YET"
-          title="Your cohort isn't activated yet."
-          body="Once the cohort lead activates your cohort and the daily engine starts running, the leaderboard will rank members by current streak, completion percentage, completed days, and join time."
-        />
-      </AppShell>
-    )
+  if (!profile?.cohort_id) {
+    return <div>No cohort assigned yet.</div>;
   }
 
-  let data
-  try {
-    data = await getLeaderboard(db, user.id, cohortId, timezone, cohort?.start_at || null, view)
-  } catch {
-    return (
-      <AppShell items={MEMBER_RAIL}>
-        <p className="eyebrow">{t('rail.leaderboard')}</p>
-        <h1>{t('leaderboard.heading')}</h1>
-        <p className="muted">{t('leaderboard.unavailable')}</p>
-      </AppShell>
-    )
-  }
-
-  const ranked = data.members
-  const me = ranked.find(x => x.userId === user.id) || null
-  const leader = ranked[0] || null
+  // Leaderboard for this cohort — sorted by current streak descending
+  const { data: leaderboard } = await supabase
+    .from("leaderboard_projection")
+    .select("user_id, current_streak, longest_streak, total_days_complete, display_name")
+    .eq("cohort_id", profile.cohort_id)
+    .order("current_streak", { ascending: false });
 
   return (
-    <AppShell items={MEMBER_RAIL}>
-      <p className="eyebrow">COHORT · CONSISTENCY INDEX</p>
-      <h1>{t('leaderboard.heading')}</h1>
-      <p className="muted">{t('leaderboard.subtitle')}</p>
-      <LeaderboardViewTabs current={view} />
-      <div className="grid" style={{ marginTop: 30 }}>
-        <MetricCard
-          label="YOUR RANK"
-          value={me ? `#${me.rank}` : '—'}
-          detail={me
-            ? `${me.currentStreak} day streak · ${me.completionPercent}% completion`
-            : 'Complete a day to enter the ranking.'}
-        />
-        <MetricCard
-          label={view === 'week' ? 'WEEK LEADER' : 'COHORT LEADER'}
-          value={leader
-            ? (view === 'week' && me)
-              ? `${leader.weekCheckins ?? 0} check-in${(leader.weekCheckins ?? 0) === 1 ? '' : 's'}`
-              : `${leader.currentStreak} day${leader.currentStreak === 1 ? '' : 's'}`
-            : '—'}
-          detail={leader ? leader.displayName : 'No completions yet.'}
-        />
-      </div>
-      <section className="card" style={{ marginTop: 15 }} aria-label="Cohort rankings">
-        {data.teamEmpty ? (
-          <p className="muted">No team yet. The leaderboard opens when your cohort lead assigns you to a team.</p>
-        ) : ranked.length === 0 ? (
-          <p className="muted">{t('leaderboard.empty')}</p>
-        ) : (
-          <div role="table" aria-label="Cohort leaderboard">
-            <div
-              role="row"
+    <div style={{ maxWidth: 600 }}>
+      <h2 style={{ fontSize: 24, marginBottom: 16 }}>Leaderboard</h2>
+
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr style={{ borderBottom: "2px solid #111827" }}>
+            <th style={{ padding: 8, textAlign: "left", fontSize: 14 }}>#</th>
+            <th style={{ padding: 8, textAlign: "left", fontSize: 14 }}>Name</th>
+            <th style={{ padding: 8, textAlign: "center", fontSize: 14 }}>Streak</th>
+            <th style={{ padding: 8, textAlign: "center", fontSize: 14 }}>Best</th>
+            <th style={{ padding: 8, textAlign: "center", fontSize: 14 }}>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(leaderboard ?? []).map((entry, i) => (
+            <tr
+              key={entry.user_id}
               style={{
-                display: 'grid',
-                gridTemplateColumns: '45px 1fr 100px 80px 70px' + (view === 'week' ? ' 70px' : ''),
-                gap: 10,
-                padding: '14px 0',
-                borderBottom: '1px solid var(--line)',
-                color: 'var(--muted)',
-                fontSize: 11,
-                letterSpacing: '.15em'
+                borderBottom: "1px solid #e5e7eb",
+                background: entry.user_id === user.id ? "#f0fdf4" : "transparent",
               }}
             >
-              <span role="columnheader">{t('leaderboard.colRank')}</span>
-              <span role="columnheader">{t('leaderboard.colMember')}</span>
-              <span role="columnheader">{t('leaderboard.colStreak')}</span>
-              <span role="columnheader">{t('leaderboard.colDays')}</span>
-              <span role="columnheader">{t('leaderboard.colComplete')}</span>
-              {view === 'week' && <span role="columnheader">{t('leaderboard.colWeek')}</span>}
-            </div>
-            {ranked.map(r => (
-              <div
-                key={r.userId}
-                role="row"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '45px 1fr 100px 80px 70px' + (view === 'week' ? ' 70px' : ''),
-                  gap: 10,
-                  alignItems: 'center',
-                  padding: '18px 0',
-                  borderBottom: '1px solid var(--line)'
-                }}
-              >
-                <span role="cell" className={r.userId === user.id ? '' : 'muted'}>
-                  {String(r.rank).padStart(2, '0')}
-                </span>
-                <div role="cell">
-                  <b style={{ color: r.userId === user.id ? 'var(--accent)' : 'inherit' }}>
-                    {r.displayName}{r.userId === user.id ? ' (you)' : ''}
-                  </b>
-                </div>
-                <span role="cell">{r.currentStreak} day{r.currentStreak === 1 ? '' : 's'}</span>
-                <span role="cell" className="muted">{r.completedDays}</span>
-                <span role="cell" style={{ color: 'var(--accent)' }}>{r.completionPercent}%</span>
-                {view === 'week' && (
-                  <span role="cell" style={{ color: 'var(--accent)' }}>{r.weekCheckins ?? 0}</span>
+              <td style={{ padding: 8, fontSize: 14 }}>{i + 1}</td>
+              <td style={{ padding: 8, fontSize: 14, fontWeight: entry.user_id === user.id ? 600 : 400 }}>
+                {entry.display_name || "Member"}
+                {entry.user_id === user.id && (
+                  <span style={{ fontSize: 11, color: "#166534", marginLeft: 4 }}>you</span>
                 )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-      <p className="muted" style={{ marginTop: 24, fontSize: 12 }}>
-        {t('leaderboard.tieExplanation')}
-      </p>
-    </AppShell>
-  )
+              </td>
+              <td style={{ padding: 8, textAlign: "center", fontSize: 14, fontWeight: 700 }}>
+                {entry.current_streak}
+              </td>
+              <td style={{ padding: 8, textAlign: "center", fontSize: 14 }}>
+                {entry.longest_streak}
+              </td>
+              <td style={{ padding: 8, textAlign: "center", fontSize: 14 }}>
+                {entry.total_days_complete}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }

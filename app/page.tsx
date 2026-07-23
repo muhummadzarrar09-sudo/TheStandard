@@ -1,38 +1,35 @@
-import Link from 'next/link'
-import { t } from '../lib/copy'
+import Link from "next/link";
 
-export const metadata = {
-  title: 'Discipline OS — Structure for people building something real',
-  description: t('app.tagline')
-}
-
-export default function Landing() {
+export default function LandingPage() {
   return (
-    <main className="main" id="main" tabIndex={-1}>
-      <p className="eyebrow">DISCIPLINE OS · PRIVATE COHORT SYSTEM</p>
-      <h1>Structure for people building something real.</h1>
-      <p className="muted" style={{ maxWidth: 620 }}>{t('app.tagline')}</p>
-      <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
-        <Link className="button" href="/login">{t('app.landingCta')}</Link>
-        <Link className="muted" href="/login" style={{ alignSelf: 'center' }}>{t('app.memberSignin')}</Link>
-      </div>
-      <section className="card" style={{ marginTop: 45 }} aria-label={t('app.howItWorksEyebrow')}>
-        <p className="eyebrow">{t('app.howItWorksEyebrow')}</p>
-        <ol style={{ paddingLeft: 18, lineHeight: 1.8, marginTop: 10 }}>
-          <li>{t('app.howItWorks1')}</li>
-          <li>{t('app.howItWorks2')}</li>
-          <li>{t('app.howItWorks3')}</li>
-          <li>{t('app.howItWorks4')}</li>
-        </ol>
-      </section>
-      <footer style={{ marginTop: 60, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
-        <p className="muted" style={{ fontSize: 11, letterSpacing: '.15em' }}>
-          {t('app.brand')} · {t('app.brandSub')}
-        </p>
-        <p className="muted" style={{ fontSize: 11, marginTop: 6 }}>
-          A private, paid cohort. New members are provisioned by the cohort lead.
-        </p>
-      </footer>
-    </main>
-  )
+    <div style={{
+      maxWidth: 600,
+      margin: "120px auto",
+      padding: 32,
+      fontFamily: "system-ui, sans-serif",
+      textAlign: "center",
+    }}>
+      <h1 style={{ fontSize: 40, fontWeight: 700, marginBottom: 12 }}>
+        The Standard
+      </h1>
+      <p style={{ fontSize: 18, color: "#666", marginBottom: 40 }}>
+        Discipline OS — a 30-day execution system for those who chose to show up.
+      </p>
+      <Link
+        href="/login"
+        style={{
+          display: "inline-block",
+          padding: "14px 32px",
+          background: "#111827",
+          color: "#fff",
+          borderRadius: 8,
+          textDecoration: "none",
+          fontSize: 16,
+          fontWeight: 600,
+        }}
+      >
+        Member access
+      </Link>
+    </div>
+  );
 }

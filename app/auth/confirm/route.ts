@@ -2,19 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 /**
- * Auth Callback Route Handler
+ * Auth Confirm Route Handler
  *
- * Handles TWO redirect URL formats from Supabase:
+ * Supabase's Free-tier default email templates sometimes redirect to
+ * /auth/confirm instead of /auth/callback. This handler covers that
+ * pattern too. Same logic as the callback handler.
  *
- * 1. PKCE flow (older):  /auth/callback?code=XXXXX
- * 2. Implicit flow (newer, Free-tier default):  /auth/callback?token_hash=XXXXX&type=magiclink
- *
- * The Free-tier default email template uses format #2.
- * If you configured a custom template (Pro tier), it might use format #1.
- * This handler supports BOTH so it works regardless.
- *
- * CRITICAL: This route MUST be listed in PUBLIC_ROUTES in middleware.ts
- * so the middleware doesn't block it before we can set the session.
+ * Both `code` (PKCE) and `token_hash+type` (implicit) patterns are handled.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -24,21 +18,17 @@ export async function GET(request: Request) {
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 
-  // ─── Supabase returned an error (e.g. link expired) ───
   if (error) {
-    console.error("[auth/callback] Supabase error:", error, errorDescription);
     return NextResponse.redirect(
       `${origin}/login?error=auth_failed&message=${encodeURIComponent(errorDescription || error)}`
     );
   }
 
-  // ─── PKCE flow: exchange code for session ───
   if (code) {
     const supabase = await createClient();
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
-      console.error("[auth/callback] exchangeCodeForSession failed:", exchangeError.message);
       return NextResponse.redirect(
         `${origin}/login?error=auth_failed&message=${encodeURIComponent(exchangeError.message)}`
       );
@@ -47,7 +37,6 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/dashboard`);
   }
 
-  // ─── Implicit flow (Free-tier default): verify token_hash + type ───
   if (tokenHash && type) {
     const supabase = await createClient();
     const { error: verifyError } = await supabase.auth.verifyOtp({
@@ -56,7 +45,6 @@ export async function GET(request: Request) {
     });
 
     if (verifyError) {
-      console.error("[auth/callback] verifyOtp failed:", verifyError.message);
       return NextResponse.redirect(
         `${origin}/login?error=auth_failed&message=${encodeURIComponent(verifyError.message)}`
       );
@@ -65,8 +53,6 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/dashboard`);
   }
 
-  // ─── No code or token_hash — something went wrong ───
-  console.error("[auth/callback] No code or token_hash parameter in URL");
   return NextResponse.redirect(
     `${origin}/login?error=auth_failed&message=No+auth+parameters+provided`
   );

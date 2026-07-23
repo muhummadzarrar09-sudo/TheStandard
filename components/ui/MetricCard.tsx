@@ -1,1 +1,0 @@
-export default function MetricCard({label,value,detail}:{label:string;value:string;detail:string}){return <section className="card"><p className="eyebrow">{label}</p><h2>{value}</h2><p className="muted">{detail}</p></section>}
