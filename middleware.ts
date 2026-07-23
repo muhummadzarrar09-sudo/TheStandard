@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 const PUBLIC_ROUTES = [
   "/",
   "/login",
-  "/auth/callback",  // ← THIS is the magic link landing spot. MUST be public.
+  "/auth/callback",
   "/auth/confirm",
   "/offline",
 ];
@@ -53,15 +53,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // ─── Step 5: Admin routes require admin role ───
-  if (ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
-    const role = user.app_metadata?.role;
-    if (role !== "admin") {
-      const dashboardUrl = request.nextUrl.clone();
-      dashboardUrl.pathname = "/dashboard";
-      return NextResponse.redirect(dashboardUrl);
-    }
-  }
+  // ─── Step 5: Admin route guard ───
+  // NOTE: We do NOT check admin role in middleware.
+  // Role checking happens in the server component layouts,
+  // which can query the database (the canonical source).
+  // Middleware only checks: "is this person logged in?"
+  //
+  // The admin layout does the actual role check using profile.role
+  // from the database — NOT user.app_metadata.role (which can
+  // disagree with the DB and cause redirect loops).
+  //
+  // If a non-admin somehow hits /admin, the admin layout will
+  // redirect them to /dashboard. No infinite loop because both
+  // layouts check the SAME database field.
 
   return response;
 }

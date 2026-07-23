@@ -16,10 +16,16 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  // ─── Admin role check ───
-  const role = user.app_metadata?.role;
+  // ─── Admin role check from DATABASE (same source as (app)/layout) ───
+  // NOT from user.app_metadata — that's a DIFFERENT source of truth
+  // and causes redirect loops when the two disagree.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
-  if (role !== "admin") {
+  if (!profile || profile.role !== "admin") {
     redirect("/dashboard");
   }
 
