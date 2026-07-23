@@ -1,18 +1,18 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 
 /**
- * Login page — Magic Link flow.
+ * Login page — Magic Link flow via server-side endpoint.
  *
- * In the latest Supabase JS v2, signInWithMagicLink was merged
- * into signInWithOtp. When called with an email (not a phone),
- * it sends an email containing a clickable magic link. The user
- * clicks the link → gets redirected to /auth/callback?code=XXXXX
- * → we exchange the code for a session → redirect to dashboard.
+ * The client NEVER calls Supabase auth directly.
+ * It calls /api/auth/send-magic-link which:
+ *  1. Checks enrollment (service-role key, bypasses RLS)
+ *  2. Checks if auth user exists
+ *  3. Checks access window
+ *  4. Only THEN sends the magic link
  *
- * NO OTP code typing needed. Just click the link.
+ * This gives proper error messages instead of Supabase's cryptic ones.
  */
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -24,22 +24,18 @@ export default function LoginPage() {
     setStatus("sending");
     setErrorMessage("");
 
-    const supabase = createClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-
-    // signInWithOtp with email sends a MAGIC LINK email (not a 6-digit code).
-    // The link redirects to our /auth/callback handler.
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${siteUrl}/auth/callback`,
-        shouldCreateUser: false,  // Only allow existing enrolled users
-      },
+    // Call OUR server endpoint, not Supabase directly
+    const res = await fetch("/api/auth/send-magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
     });
 
-    if (error) {
+    const data = await res.json();
+
+    if (!res.ok) {
       setStatus("error");
-      setErrorMessage(error.message);
+      setErrorMessage(data.error || "Something went wrong. Try again.");
       return;
     }
 
